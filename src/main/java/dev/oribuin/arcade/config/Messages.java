@@ -49,6 +49,9 @@ public class Messages {
 
     @Comment("The message sent when a player ragequits a game")
     private TextMessage playerRageQuit = new TextMessage(PREFIX + "<#93bc80><player> <white>has ragequit from the match");
+    
+    @Comment("The message sent when a player does something while it's not their turn")
+    private TextMessage notUsersTurn = new TextMessage(PREFIX + "Please wait for your turn before you do this");
 
     public static Messages get() {
         return ArcadePlugin.getInstance().getConfigLoader().get(Messages.class);
@@ -106,5 +109,7 @@ public class Messages {
         return playerRageQuit;
     }
 
-
+    public TextMessage getNotUsersTurn() {
+        return notUsersTurn;
+    }
 }

@@ -4,11 +4,13 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import dev.oribuin.arcade.ArcadePlugin;
 import dev.oribuin.arcade.api.game.ArcadeGame;
+import dev.oribuin.arcade.config.Messages;
 import dev.oribuin.arcade.games.connectfour.participant.ConnectPlayer;
 import dev.oribuin.arcade.games.connectfour.token.ConnectToken;
 import dev.oribuin.arcade.games.connectfour.token.TokenColour;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.task.ScheduledTask;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -61,6 +63,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     private BlockDisplay displayBoard;
     private ScheduledTask task;
     private Integer glowRow;
+    private UUID currentTurn;
+    private UUID lastTurn;
     private boolean alreadyWon; // todo temp
     private List<TokenColour> playable;
 
@@ -77,7 +81,6 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         this.alreadyWon = false;
         this.glowRow = null;
         this.playable = new ArrayList<>(TokenColour.COLORS.values());
-
     }
 
     public boolean isRow(Entity entity) {
@@ -197,25 +200,30 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         this.playable = new ArrayList<>(TokenColour.COLORS.values());
         this.active = true;
 
+        // Selects the last player
+        UUID[] uuids = this.participants.keySet().toArray(new UUID[0]);
+        this.currentTurn = uuids[0];
+        this.lastTurn = uuids[uuids.length - 1];
+
         Bukkit.getPluginManager().registerEvents(this, ArcadePlugin.getInstance());
         this.task = PluginScheduler.get().runTaskTimerAtLocation(this.location, () -> {
-            this.participants.values().forEach(connectPlayer -> {
-                Player player = connectPlayer.getPlayer();
-                RayTraceResult entity = player.rayTraceEntities(5);
-                if (entity == null || !(entity.getHitEntity() instanceof Interaction interaction)) {
-                    this.unapplyGlow();
-                    return;
-                }
+            ConnectPlayer participant = this.participants.get(this.currentTurn);
+            if (participant == null) return;
 
-                Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
-                if (row == null || !this.rows.containsKey(interaction.getUniqueId())) {
-                    this.unapplyGlow();
-                    return;
-                }
+            Player player = participant.getPlayer();
+            RayTraceResult entity = player.rayTraceEntities(5);
+            if (entity == null || !(entity.getHitEntity() instanceof Interaction interaction)) {
+                this.unapplyGlow();
+                return;
+            }
 
-                this.applyGlow(connectPlayer.getTokenColour(), row);
-            });
+            Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
+            if (row == null || !this.rows.containsKey(interaction.getUniqueId())) {
+                this.unapplyGlow();
+                return;
+            }
 
+            this.applyGlow(participant.getTokenColour(), row);
         }, 100, 150, TimeUnit.MILLISECONDS);
     }
 
@@ -227,14 +235,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     @Override
     public void stop(boolean cancelled) {
         this.active = false;
-        this.wipeBoard();
-
-        for (Map.Entry<UUID, ConnectPlayer> entry : this.participants.entrySet()) {
-            Player player = Bukkit.getPlayer(entry.getKey());
-            if (player != null) this.leave(player, false);
-        }
-
         this.participants.clear();
+        this.wipeBoard();
     }
 
     /**
@@ -289,6 +291,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         ConnectPlayer participant = this.participants.get(player.getUniqueId());
         if (participant == null || CONNECT_ROW == null) return;
         if (!this.rows.containsKey(interaction.getUniqueId())) return;
+        if (!this.active) return;
 
         // Make sure the interaction is a row
         Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
@@ -298,7 +301,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
             boolean winningToken = this.checkBoard(participant.getTokenColour());
             if (!this.alreadyWon && winningToken) {
                 this.alreadyWon = true;
-                player.sendMessage("you've won the game <3");
+                this.active = false;
+
+                this.sendMessage(Component.text(player.getName() + " has won the game ! GOODBYE!"));
+                PluginScheduler.get().runTaskAtLocationLater(this.location, this::unload, 3 * 60);
             }
         } else {
             player.sendMessage("You cannot place a token in this row");
@@ -353,6 +359,13 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
      * @param row    The row to drop the token into
      */
     public boolean dropToken(Player who, TokenColour colour, int row) {
+
+        // Check if the user has already placed a token previously
+        if (!who.getUniqueId().equals(this.currentTurn)) {
+            Messages.get().getNotUsersTurn().send(who);
+            return false;
+        }
+
         Map<Integer, ConnectToken> rowTokens = this.tokens.row(row);
 
         int minimum = Collections.min(rowTokens.keySet());
@@ -361,20 +374,21 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         int available = minimum;
         for (int i = minimum; i < maximum; i++) {
             ConnectToken connectToken = rowTokens.get(i);
-            if (connectToken != null && connectToken.getColour() == TokenColour.EMPTY) {
-                available = i;
-                break;
-            }
+            available = i;
+
+            if (connectToken != null && connectToken.getColour() == TokenColour.EMPTY) break;
         }
-        
+
         if (available == maximum) return false;
 
         ConnectToken connectToken = rowTokens.get(available);
         connectToken.setColour(colour);
-
-        // update connectToken
         connectToken.update();
+
         this.tokens.put(row, available, connectToken);
+        this.currentTurn = this.lastTurn; // swap turns
+        this.lastTurn = who.getUniqueId();
+        this.unapplyGlow();
         return true;
     }
 

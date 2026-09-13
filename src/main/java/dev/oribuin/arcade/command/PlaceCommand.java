@@ -6,6 +6,7 @@ import dev.oribuin.arcade.api.game.ArcadeGame;
 import dev.oribuin.arcade.games.connectfour.token.TokenColour;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.util.ArcadeUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -62,8 +63,7 @@ public class PlaceCommand {
                 return;
             }
 
-            sender.sendMessage("Placing [" + game + "] into the world; This will remove in " + ArcadeUtils.formatTime(duration.toMillis()));
-            arcadeGame.join(sender);
+            Bukkit.getOnlinePlayers().forEach(arcadeGame::join);
             arcadeGame.start();
             PluginScheduler.get().runTaskAtLocationLater(
                     relative.getLocation(),
