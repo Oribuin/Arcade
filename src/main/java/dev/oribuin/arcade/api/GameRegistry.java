@@ -45,6 +45,6 @@ public class GameRegistry {
         result.place(position, direction);
         return (T) result;
     }
-    
+
 
 }

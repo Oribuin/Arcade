@@ -3,6 +3,7 @@ package dev.oribuin.arcade.command;
 import dev.oribuin.arcade.ArcadePlugin;
 import dev.oribuin.arcade.api.GameRegistry;
 import dev.oribuin.arcade.api.game.ArcadeGame;
+import dev.oribuin.arcade.games.connectfour.token.TokenColour;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import org.bukkit.Location;
@@ -20,6 +21,7 @@ import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -61,10 +63,11 @@ public class PlaceCommand {
             }
 
             sender.sendMessage("Placing [" + game + "] into the world; This will remove in " + ArcadeUtils.formatTime(duration.toMillis()));
+            arcadeGame.join(sender);
             arcadeGame.start();
             PluginScheduler.get().runTaskAtLocationLater(
                     relative.getLocation(),
-                    arcadeGame::remove,
+                    arcadeGame::unload,
                     duration.toSeconds(),
                     TimeUnit.SECONDS
             );
@@ -72,8 +75,13 @@ public class PlaceCommand {
     }
 
     @Suggestions("games")
-    public List<String> suggestion(CommandContext<CommandSender> senderCommandContainer, String input) {
+    public List<String> gameSuggest(CommandContext<CommandSender> context, String input) {
         return GameRegistry.REGISTRY.keySet().stream().toList();
+    }
+
+    @Suggestions("tokens")
+    public List<String> tokenSuggest(CommandContext<CommandSender> context, String input) {
+        return new ArrayList<>(TokenColour.COLORS.keySet());
     }
 
 

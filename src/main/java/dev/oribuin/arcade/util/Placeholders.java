@@ -30,7 +30,6 @@ public final class Placeholders {
      * Applies the placeholders to the given string
      *
      * @param string the string to apply the placeholders to
-     *
      * @return the string with the placeholders replaced
      */
     public Component apply(String string) {
@@ -50,7 +49,6 @@ public final class Placeholders {
      * Applies the placeholders to the given string
      *
      * @param string the string to apply the placeholders to
-     *
      * @return the string with the placeholders replaced
      */
     public String applyString(String string) {
@@ -84,7 +82,6 @@ public final class Placeholders {
      *
      * @param placeholder the placeholder to add
      * @param value       the value to replace the placeholder with
-     *
      * @return a new Placeholders builder with delimiters initially set to % and a placeholder added
      */
     public static Builder builder(String placeholder, Component value) {
@@ -96,7 +93,6 @@ public final class Placeholders {
      *
      * @param placeholder the placeholder to add
      * @param value       the value to replace the placeholder with
-     *
      * @return a new Placeholders builder with delimiters initially set to % and a placeholder added
      */
     public static Builder builder(String placeholder, String value) {
@@ -108,7 +104,6 @@ public final class Placeholders {
      *
      * @param placeholder the placeholder to add
      * @param value       the value to replace the placeholder with
-     *
      * @return a new Placeholders builder with delimiters initially set to % and a placeholder added
      */
     public static Builder builder(String placeholder, Object value) {
@@ -120,7 +115,6 @@ public final class Placeholders {
      * Creates a new builder with delimiters initially set to % and a placeholder added
      *
      * @param placeholders The Placeholders instance to add placeholders from
-     *
      * @return this
      */
     public static Builder builder(Placeholders placeholders) {
@@ -140,7 +134,6 @@ public final class Placeholders {
      *
      * @param placeholder the placeholder to add
      * @param value       the value to replace the placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and one placeholder added
      */
     public static Placeholders of(String placeholder, Component value) {
@@ -152,7 +145,6 @@ public final class Placeholders {
      *
      * @param placeholder the placeholder to add
      * @param value       the value to replace the placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and one placeholder added
      */
     public static Placeholders of(String placeholder, String value) {
@@ -164,7 +156,6 @@ public final class Placeholders {
      *
      * @param placeholder the placeholder to add
      * @param value       the value to replace the placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and one placeholder added
      */
     public static Placeholders of(String placeholder, Object value) {
@@ -178,7 +169,6 @@ public final class Placeholders {
      * @param value1       the value to replace the first placeholder with
      * @param placeholder2 the second placeholder to add
      * @param value2       the value to replace the second placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and two placeholders added
      */
     public static Placeholders of(String placeholder1, Component value1,
@@ -195,7 +185,6 @@ public final class Placeholders {
      * @param value1       the value to replace the first placeholder with
      * @param placeholder2 the second placeholder to add
      * @param value2       the value to replace the second placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and two placeholders added
      */
     public static Placeholders of(String placeholder1, String value1,
@@ -212,7 +201,6 @@ public final class Placeholders {
      * @param value1       the value to replace the first placeholder with
      * @param placeholder2 the second placeholder to add
      * @param value2       the value to replace the second placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and two placeholders added
      */
     public static Placeholders of(String placeholder1, Object value1,
@@ -231,7 +219,6 @@ public final class Placeholders {
      * @param value2       the value to replace the second placeholder with
      * @param placeholder3 the third placeholder to add
      * @param value3       the value to replace the third placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and three placeholders added
      */
     public static Placeholders of(String placeholder1, Component value1,
@@ -252,7 +239,6 @@ public final class Placeholders {
      * @param value2       the value to replace the second placeholder with
      * @param placeholder3 the third placeholder to add
      * @param value3       the value to replace the third placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and three placeholders added
      */
     public static Placeholders of(String placeholder1, String value1,
@@ -273,7 +259,6 @@ public final class Placeholders {
      * @param value2       the value to replace the second placeholder with
      * @param placeholder3 the third placeholder to add
      * @param value3       the value to replace the third placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and three placeholders added
      */
     public static Placeholders of(String placeholder1, Object value1,
@@ -296,7 +281,6 @@ public final class Placeholders {
      * @param value3       the value to replace the third placeholder with
      * @param placeholder4 the fourth placeholder to add
      * @param value4       the value to replace the fourth placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and four placeholders added
      */
     public static Placeholders of(String placeholder1, Component value1,
@@ -321,7 +305,6 @@ public final class Placeholders {
      * @param value3       the value to replace the third placeholder with
      * @param placeholder4 the fourth placeholder to add
      * @param value4       the value to replace the fourth placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and four placeholders added
      */
     public static Placeholders of(String placeholder1, String value1,
@@ -346,7 +329,6 @@ public final class Placeholders {
      * @param value3       the value to replace the third placeholder with
      * @param placeholder4 the fourth placeholder to add
      * @param value4       the value to replace the fourth placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and four placeholders added
      */
     public static Placeholders of(String placeholder1, Object value1,
@@ -373,7 +355,6 @@ public final class Placeholders {
      * @param value4       the value to replace the fourth placeholder with
      * @param placeholder5 the fifth placeholder to add
      * @param value5       the value to replace the fifth placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and five placeholders added
      */
     public static Placeholders of(String placeholder1, Component value1,
@@ -402,7 +383,6 @@ public final class Placeholders {
      * @param value4       the value to replace the fourth placeholder with
      * @param placeholder5 the fifth placeholder to add
      * @param value5       the value to replace the fifth placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and five placeholders added
      */
     public static Placeholders of(String placeholder1, String value1,
@@ -431,7 +411,6 @@ public final class Placeholders {
      * @param value4       the value to replace the fourth placeholder with
      * @param placeholder5 the fifth placeholder to add
      * @param value5       the value to replace the fifth placeholder with
-     *
      * @return a new Placeholders instance with delimiters set to % and five placeholders added
      */
     public static Placeholders of(String placeholder1, Object value1,
@@ -460,7 +439,6 @@ public final class Placeholders {
          *
          * @param placeholder The placeholder to add
          * @param value       The value to replace the placeholder with
-         *
          * @return this
          */
         public Builder add(String placeholder, Component value) {
@@ -473,7 +451,6 @@ public final class Placeholders {
          *
          * @param placeholder The placeholder to add
          * @param value       The value to replace the placeholder with
-         *
          * @return this
          */
         public Builder add(String placeholder, String value) {
@@ -485,7 +462,6 @@ public final class Placeholders {
          *
          * @param placeholder The placeholder to add
          * @param value       The value to replace the placeholder with
-         *
          * @return this
          */
         public Builder add(String placeholder, Object value) {
@@ -500,7 +476,6 @@ public final class Placeholders {
          * Adds all placeholders from another Placeholders instance
          *
          * @param placeholders The Placeholders instance to add placeholders from
-         *
          * @return this
          */
         public Builder addAll(Placeholders placeholders) {
@@ -511,7 +486,6 @@ public final class Placeholders {
          * Adds all placeholders from a map
          *
          * @param placeholders The map to add placeholders from
-         *
          * @return this
          */
         public Builder addAll(Map<String, Component> placeholders) {

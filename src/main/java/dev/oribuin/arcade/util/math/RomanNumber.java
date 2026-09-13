@@ -27,7 +27,6 @@ public class RomanNumber {
      * Convert an integer to a roman numeral string
      *
      * @param number The number to convert
-     *
      * @return The roman numeral string
      */
     public static String toRoman(int number) {

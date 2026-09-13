@@ -14,7 +14,6 @@ public interface SchedulerWrapper {
      * Checks if the current thread is ticking the given entity.
      *
      * @param entity The entity to check.
-     *
      * @return true if the current thread is ticking the given entity, false otherwise.
      */
     boolean isEntityThread(Entity entity);
@@ -23,7 +22,6 @@ public interface SchedulerWrapper {
      * Checks if the current thread is ticking at the given location.
      *
      * @param location The location to check.
-     *
      * @return true if the current thread is ticking at the given location, false otherwise.
      */
     boolean isLocationThread(Location location);
@@ -36,7 +34,6 @@ public interface SchedulerWrapper {
      * Runs the task in the next tick.
      *
      * @param runnable The task to run.
-     *
      * @return The task created.
      */
     ScheduledTask runTask(Runnable runnable);
@@ -45,7 +42,6 @@ public interface SchedulerWrapper {
      * Runs the task asynchronously.
      *
      * @param runnable The task to run.
-     *
      * @return The task created.
      */
     ScheduledTask runTaskAsync(Runnable runnable);

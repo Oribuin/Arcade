@@ -33,7 +33,7 @@ public class ConnectToken {
                 new AxisAngle4f()
         );
 
-        this.display.setBlock(this.colour.getIcon().createBlockData());
+        this.display.setBlock(this.colour.icon().createBlockData());
         this.display.setBrightness(new Display.Brightness(15, 15));
         this.display.setDisplayHeight(TOKEN_SIZE);
         this.display.setDisplayWidth(TOKEN_SIZE);

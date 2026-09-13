@@ -1,7 +1,7 @@
 package dev.oribuin.arcade.config.type;
 
-import dev.oribuin.arcade.util.ArcadeUtils;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
+import dev.oribuin.arcade.util.ArcadeUtils;
 import dev.oribuin.arcade.util.Placeholders;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
@@ -80,7 +80,6 @@ public class TextMessage {
      * Create a new text message with an action bar
      *
      * @param actionbar The action bar to send
-     *
      * @return The resulting text message
      */
     @NotNull
@@ -111,20 +110,20 @@ public class TextMessage {
      * Send a message to players with
      *
      * @param audience     The audience to send the message to
-     * @param Placeholders The plugin defined Placeholders
+     * @param placeholders The plugin defined Placeholders
      */
-    public void send(Audience audience, Placeholders Placeholders) {
-        this.send(audience, null, Placeholders);
+    public void send(Audience audience, Placeholders placeholders) {
+        this.send(audience, null, placeholders);
     }
 
     /**
      * Send a message to players with
      *
      * @param audience     The audience to send the message to
-     * @param Placeholders The plugin defined Placeholders
+     * @param placeholders The plugin defined Placeholders
      */
-    public void send(Audience audience, Object... Placeholders) {
-        this.send(audience, null, Placeholders);
+    public void send(Audience audience, Object... placeholders) {
+        this.send(audience, null, placeholders);
     }
 
     /**
@@ -184,7 +183,6 @@ public class TextMessage {
      * @param message      The message being sent
      * @param target       The target of the placeholderapi values if available
      * @param placeholders Any possible Placeholders
-     *
      * @return The formatted message
      */
     public Component parse(String message, Player target, Placeholders placeholders) {
@@ -199,7 +197,6 @@ public class TextMessage {
      *
      * @param message The message being sent
      * @param target  The target of the placeholderapi values if available
-     *
      * @return The formatted message
      */
     public Component parse(String message, Player target) {
@@ -211,7 +208,6 @@ public class TextMessage {
      *
      * @param message      The message being sent
      * @param Placeholders Any possible Placeholders
-     *
      * @return The formatted message
      */
     public Component parse(String message, Placeholders Placeholders) {
@@ -222,7 +218,6 @@ public class TextMessage {
      * Parse a message through the plugin
      *
      * @param message The message being sent
-     *
      * @return The formatted message
      */
     public Component parse(String message) {
@@ -286,5 +281,5 @@ public class TextMessage {
         this.titleSubtitle = titleSubtitle;
         return this;
     }
-    
+
 }

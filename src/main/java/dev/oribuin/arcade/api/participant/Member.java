@@ -30,5 +30,5 @@ public class Member extends Participant {
     public Member(@NotNull Player player) {
         super(player);
     }
-    
+
 }

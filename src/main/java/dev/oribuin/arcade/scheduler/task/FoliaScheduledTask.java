@@ -29,7 +29,7 @@ public class FoliaScheduledTask implements ScheduledTask {
     public boolean isRunning() {
         io.papermc.paper.threadedregions.scheduler.ScheduledTask.ExecutionState state = this.foliaTask.getExecutionState();
         return state == io.papermc.paper.threadedregions.scheduler.ScheduledTask.ExecutionState.RUNNING
-               || state == io.papermc.paper.threadedregions.scheduler.ScheduledTask.ExecutionState.CANCELLED_RUNNING;
+                || state == io.papermc.paper.threadedregions.scheduler.ScheduledTask.ExecutionState.CANCELLED_RUNNING;
     }
 
     @Override

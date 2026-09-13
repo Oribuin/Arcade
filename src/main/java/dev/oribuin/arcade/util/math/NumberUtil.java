@@ -9,7 +9,6 @@ public final class NumberUtil {
      *
      * @param value    The value
      * @param timeUnit The TimeUnit
-     *
      * @return the value in ticks, rounded to the nearest tick
      */
     public static long timeUnitToTicks(long value, TimeUnit timeUnit) {
@@ -20,7 +19,6 @@ public final class NumberUtil {
      * Convert a Double into a String with maximum 2 decimal places
      *
      * @param value The value
-     *
      * @return The double as a String
      */
     public static String rounded(Double value) {
@@ -31,7 +29,6 @@ public final class NumberUtil {
      * Convert a Double into a String with maximum 2 decimal places
      *
      * @param value The value
-     *
      * @return The double as a String
      */
     public static String rounded(Float value) {
@@ -42,7 +39,6 @@ public final class NumberUtil {
      * Convert a Double into a String with a specified amount of decimal places
      *
      * @param value The value
-     *
      * @return The double as a String
      */
     public static String rounded(Double value, int decimals) {

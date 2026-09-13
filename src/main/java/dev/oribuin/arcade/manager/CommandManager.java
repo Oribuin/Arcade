@@ -61,7 +61,11 @@ public class CommandManager extends LegacyPaperCommandManager<CommandSender> imp
 
         // Register additional stuff down here :3
         // Register all the plugin commands
-        this.parser.parse(new PlaceCommand(this.plugin));
+        try {
+            this.parser.parse(new PlaceCommand(this.plugin));
+        } catch (IllegalArgumentException ex) {
+            owningPlugin.getLogger().severe("There was an issue parsing a command: " + ex.getMessage());
+        }
     }
 
     /**
