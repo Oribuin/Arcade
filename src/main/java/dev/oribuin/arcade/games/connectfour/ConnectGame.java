@@ -10,6 +10,7 @@ import dev.oribuin.arcade.games.connectfour.token.ConnectToken;
 import dev.oribuin.arcade.games.connectfour.token.TokenColour;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.task.ScheduledTask;
+import dev.oribuin.arcade.util.ArcadeUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -48,6 +49,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static dev.oribuin.arcade.games.connectfour.token.ConnectToken.TOKEN_SIZE;
 
@@ -303,7 +305,18 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
                 this.active = false;
                 this.applyUniversalGlow(participant.getTokenColour()); // User won so the whole game should light up
 
-                this.sendMessage(Component.text(player.getName() + " has won the game ! GOODBYE!"));
+                String losers = this.participants.values().stream()
+                        .filter(x -> x.getUniqueId() != player.getUniqueId())
+                        .map(x -> x.getPlayer().getName())
+                        .collect(Collectors.joining(", "));
+                
+                if (losers.isEmpty()) losers = "N/A";
+                        
+                Messages.get().getPlayerWon().send(this,
+                        "game", ArcadeUtils.niceify(this.identifier),
+                        "winner", player.getName(),
+                        "losers", losers
+                );
                 PluginScheduler.get().runTaskAtLocationLater(this.location, this::unload, 3 * 60);
             }
         } else {
