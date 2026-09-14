@@ -44,10 +44,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -122,11 +120,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
                 double rotatedX = localX * Math.cos(rotation);
                 double rotatedZ = -localX * Math.sin(rotation);
 
-                Location tokenLocation = center.clone().add(
-                        rotatedX,
-                        localY,
-                        rotatedZ
-                );
+                Location tokenLocation = center.clone().add(rotatedX, localY, rotatedZ);
 
                 ConnectToken token = this.createEmptyToken(tokenLocation);
                 token.getDisplay().setRotation((float) Math.toDegrees(rotation), 0);
@@ -151,12 +145,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         this.displayBoard = center.getWorld().spawn(center, BlockDisplay.class, CreatureSpawnEvent.SpawnReason.CUSTOM, x -> {
             x.setBlock(Material.BLUE_STAINED_GLASS.createBlockData());
             x.setBrightness(new Display.Brightness(15, 15));
-            x.setTransformation(new Transformation(
-                    new Vector3f(rotatedX, 0F, rotatedZ),
-                    new AxisAngle4f(rotation, 0F, 1F, 0F),
-                    new Vector3f(widthScale, heightScale, 1f),
-                    new AxisAngle4f()
-            ));
+            x.setTransformation(new Transformation(new Vector3f(rotatedX, 0F, rotatedZ), new AxisAngle4f(rotation, 0F, 1F, 0F), new Vector3f(widthScale, heightScale, 1f), new AxisAngle4f()));
             x.setBillboard(Display.Billboard.FIXED);
 
             PersistentDataContainer container = x.getPersistentDataContainer();
@@ -171,24 +160,17 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
             double rowRotatedX = rowLocalX * Math.cos(rotation);
             double rowRotatedZ = -rowLocalX * Math.sin(rotation);
 
-            Location rowLocation = center.clone().add(
-                    rowRotatedX,
-                    TOKEN_SIZE,
-                    rowRotatedZ
-            );
+            Location rowLocation = center.clone().add(rowRotatedX, TOKEN_SIZE, rowRotatedZ);
             rowLocation.setRotation((float) Math.toDegrees(rotation), 0);
-            Interaction interaction = center.getWorld().spawn(
-                    rowLocation,
-                    Interaction.class,
-                    CreatureSpawnEvent.SpawnReason.CUSTOM, x -> {
-                        x.setInteractionWidth(0.35f);
-                        x.setInteractionHeight(totalHeight);
-                        x.setResponsive(true);
-                        x.setGlowing(true);
+            Interaction interaction = center.getWorld().spawn(rowLocation, Interaction.class, CreatureSpawnEvent.SpawnReason.CUSTOM, x -> {
+                x.setInteractionWidth(0.35f);
+                x.setInteractionHeight(totalHeight);
+                x.setResponsive(true);
+                x.setGlowing(true);
 
-                        PersistentDataContainer container = x.getPersistentDataContainer();
-                        container.set(ConnectGame.CONNECT_ROW, PersistentDataType.INTEGER, currentRow);
-                    });
+                PersistentDataContainer container = x.getPersistentDataContainer();
+                container.set(ConnectGame.CONNECT_ROW, PersistentDataType.INTEGER, currentRow);
+            });
 
             this.rows.put(interaction.getUniqueId(), interaction);
         }
@@ -210,16 +192,18 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
 
         Bukkit.getPluginManager().registerEvents(this, ArcadePlugin.getInstance());
         this.task = PluginScheduler.get().runTaskTimerAtLocation(this.location, () -> {
+            if (!this.active) return;
 
             UUID currentTurn = this.turnQueue.peek();
             if (currentTurn == null) return;
+
             ConnectPlayer active = this.participants.get(currentTurn);
             if (active == null) return;
 
             this.participants.values().forEach(participant -> {
-                
+
                 participant.sendActionBar(Component.text("[" + active.getName() + "'s Turn]"));
-                
+
                 // Highlight the current row for the user
                 if (currentTurn.equals(participant.getUniqueId())) {
                     Player player = participant.getPlayer();
@@ -317,6 +301,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
             if (!this.alreadyWon && winningToken) {
                 this.alreadyWon = true;
                 this.active = false;
+                this.applyUniversalGlow(participant.getTokenColour()); // User won so the whole game should light up
 
                 this.sendMessage(Component.text(player.getName() + " has won the game ! GOODBYE!"));
                 PluginScheduler.get().runTaskAtLocationLater(this.location, this::unload, 3 * 60);
@@ -355,6 +340,18 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         return token;
     }
 
+    /**
+     * Apply a universal glow to the colour, Typically used when someone has won
+     *
+     * @param colour The colour of the token
+     */
+    private void applyUniversalGlow(@NotNull TokenColour colour) {
+        this.tokens.values().forEach(x -> {
+            x.getDisplay().setGlowing(true);
+            x.getDisplay().setGlowColorOverride(colour.color());
+        });
+    }
+
     public void wipeBoard() {
         if (this.task != null) this.task.cancel();
 
@@ -362,6 +359,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
             BlockDisplay display = token.getDisplay();
             if (display == null || !display.isValid() || display.isDead()) continue;
 
+            display.setGlowing(false);
             token.setColour(TokenColour.EMPTY);
             token.update();
         }
@@ -376,9 +374,11 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     public boolean dropToken(Player who, TokenColour colour, int row) {
 
         // Check if the user has already placed a token previously
-        if (!who.getUniqueId().equals(this.turnQueue.peek())) {
-            Messages.get().getNotUsersTurn().send(who);
-            return false;
+        if (this.participants.size() > 1) { // It's hard to test against myself okay
+            if (!who.getUniqueId().equals(this.turnQueue.peek())) {
+                Messages.get().getNotUsersTurn().send(who);
+                return false;
+            }
         }
 
         Map<Integer, ConnectToken> rowTokens = this.tokens.row(row);
@@ -467,10 +467,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     }
 
     /**
-     * Apply a temporary glow of a specified colour 
+     * Apply a temporary glow of a specified colour
      *
      * @param colour The viewer to see the glow
-     * @param row The entity who's going to glow
+     * @param row    The entity who's going to glow
      */
     public void applyGlow(@NotNull TokenColour colour, Integer row) {
         if (Objects.equals(row, this.glowRow)) return;
