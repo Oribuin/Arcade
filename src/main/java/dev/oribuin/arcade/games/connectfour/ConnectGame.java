@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,7 +44,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -60,11 +64,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     private final float tokenGap;
     private final Table<Integer, Integer, ConnectToken> tokens; // Row, Column, TokenColour
     private final Map<UUID, Interaction> rows;
+    private final Queue<UUID> turnQueue;
     private BlockDisplay displayBoard;
     private ScheduledTask task;
     private Integer glowRow;
-    private UUID currentTurn;
-    private UUID lastTurn;
     private boolean alreadyWon; // todo temp
     private List<TokenColour> playable;
 
@@ -80,6 +83,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         this.rows = new HashMap<>();
         this.alreadyWon = false;
         this.glowRow = null;
+        this.turnQueue = new ArrayDeque<>();
         this.playable = new ArrayList<>(TokenColour.COLORS.values());
     }
 
@@ -201,29 +205,39 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         this.active = true;
 
         // Selects the last player
-        UUID[] uuids = this.participants.keySet().toArray(new UUID[0]);
-        this.currentTurn = uuids[0];
-        this.lastTurn = uuids[uuids.length - 1];
+        this.turnQueue.clear();
+        this.turnQueue.addAll(this.participants.keySet());
 
         Bukkit.getPluginManager().registerEvents(this, ArcadePlugin.getInstance());
         this.task = PluginScheduler.get().runTaskTimerAtLocation(this.location, () -> {
-            ConnectPlayer participant = this.participants.get(this.currentTurn);
-            if (participant == null) return;
 
-            Player player = participant.getPlayer();
-            RayTraceResult entity = player.rayTraceEntities(5);
-            if (entity == null || !(entity.getHitEntity() instanceof Interaction interaction)) {
-                this.unapplyGlow();
-                return;
-            }
+            UUID currentTurn = this.turnQueue.peek();
+            if (currentTurn == null) return;
+            ConnectPlayer active = this.participants.get(currentTurn);
+            if (active == null) return;
 
-            Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
-            if (row == null || !this.rows.containsKey(interaction.getUniqueId())) {
-                this.unapplyGlow();
-                return;
-            }
+            this.participants.values().forEach(participant -> {
+                
+                participant.sendActionBar(Component.text("[" + active.getName() + "'s Turn]"));
+                
+                // Highlight the current row for the user
+                if (currentTurn.equals(participant.getUniqueId())) {
+                    Player player = participant.getPlayer();
+                    RayTraceResult entity = player.rayTraceEntities(5);
+                    if (entity == null || !(entity.getHitEntity() instanceof Interaction interaction)) {
+                        this.unapplyGlow();
+                        return;
+                    }
 
-            this.applyGlow(participant.getTokenColour(), row);
+                    Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
+                    if (row == null || !this.rows.containsKey(interaction.getUniqueId())) {
+                        this.unapplyGlow();
+                        return;
+                    }
+
+                    this.applyGlow(participant.getTokenColour(), row);
+                }
+            });
         }, 100, 150, TimeUnit.MILLISECONDS);
     }
 
@@ -236,6 +250,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     public void stop(boolean cancelled) {
         this.active = false;
         this.participants.clear();
+        this.turnQueue.clear();
         this.wipeBoard();
     }
 
@@ -361,7 +376,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     public boolean dropToken(Player who, TokenColour colour, int row) {
 
         // Check if the user has already placed a token previously
-        if (!who.getUniqueId().equals(this.currentTurn)) {
+        if (!who.getUniqueId().equals(this.turnQueue.peek())) {
             Messages.get().getNotUsersTurn().send(who);
             return false;
         }
@@ -386,8 +401,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         connectToken.update();
 
         this.tokens.put(row, available, connectToken);
-        this.currentTurn = this.lastTurn; // swap turns
-        this.lastTurn = who.getUniqueId();
+        this.turnQueue.poll();
+        this.turnQueue.add(who.getUniqueId()); // add them back
         this.unapplyGlow();
         return true;
     }
@@ -452,10 +467,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     }
 
     /**
-     * Apply a temporary glow to an entity for a player
+     * Apply a temporary glow of a specified colour 
      *
-     * @param viewer The viewer to see the glow
-     * @param entity The entity who's going to glow
+     * @param colour The viewer to see the glow
+     * @param row The entity who's going to glow
      */
     public void applyGlow(@NotNull TokenColour colour, Integer row) {
         if (Objects.equals(row, this.glowRow)) return;
