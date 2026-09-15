@@ -24,11 +24,11 @@ public abstract class ArcadeGame<T extends Participant> extends EventHandler imp
 
     public static final NamespacedKey GAME_ID = new NamespacedKey(ArcadePlugin.getInstance(), "game_id");
 
-    protected final UUID identifier; // The unique id for the game
     protected final String name; // The identifier for the game 
     protected final Map<UUID, T> participants; // The people playing the game
     protected final double wager; // The money placed within the game 
     protected final int playerCount;  // The amount of people required to play the game
+    protected UUID identifier; // The unique id for the game
     protected Location location; // The centre location of the game
     protected BlockFace direction;
     protected boolean active;
@@ -184,9 +184,13 @@ public abstract class ArcadeGame<T extends Participant> extends EventHandler imp
                 ", active=" + active +
                 '}';
     }
-
+    
     public UUID getIdentifier() {
         return identifier;
+    }
+
+    public void setIdentifier(UUID identifier) {
+        this.identifier = identifier;
     }
 
     public String getName() {

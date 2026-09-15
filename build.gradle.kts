@@ -35,10 +35,11 @@ dependencies {
     compileOnly("org.jetbrains:annotations:23.0.0")
 
     // Commands, Configs & Database
-    implementation("org.incendo:cloud-core:2.0.0")
-    implementation("org.incendo:cloud-annotations:2.0.0")
-    implementation("org.incendo:cloud-paper:2.0.0")
-    implementation("org.spongepowered:configurate-yaml:4.2.0")
+    compileOnly("org.spongepowered:configurate-yaml:4.2.0")
+    compileOnly("org.incendo:cloud-core:2.0.0")
+    compileOnly("org.incendo:cloud-annotations:2.0.0")
+    compileOnly("org.incendo:cloud-paper:2.0.0")
+    implementation("com.zaxxer:HikariCP:4.0.3")
     implementation("dev.triumphteam:triumph-gui:3.1.13") {
         exclude(group = "com.google.code.gson", module = "gson")
         exclude(group = "net.kyori", module = "*")
@@ -74,6 +75,12 @@ tasks {
         this.apiVersion = "26.1.2"
         this.foliaSupported = true
         this.softDepend = listOf("HeadDatabase", "PlaceholderAPI")
+        this.libraries = listOf(
+            "org.incendo:cloud-core:2.0.0",
+            "org.incendo:cloud-annotations:2.0.0",
+            "org.incendo:cloud-paper:2.0.0",
+            "org.spongepowered:configurate-yaml:4.2.0"
+        )
     }
 
     build {

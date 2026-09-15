@@ -12,6 +12,7 @@ import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.task.ScheduledTask;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -19,6 +20,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -90,10 +92,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
      * @param direction The direction the board is facing
      */
     public void place(@NotNull Location location, @NotNull BlockFace direction) {
-        this.unload();
         this.location = location;
         this.direction = direction;
 
+        System.out.println("Placing with identifier " + this.identifier);
         float rotation = this.getRotation(direction);
 
         // region Spawn the tokens into the world
@@ -154,7 +156,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
             double rowRotatedX = rowLocalX * Math.cos(rotation);
             double rowRotatedZ = -rowLocalX * Math.sin(rotation);
 
-            Location rowLocation = center.clone().add(rowRotatedX, 0, rowRotatedZ);
+            Location rowLocation = center.clone().add(rowRotatedX, this.tokenGap, rowRotatedZ);
             rowLocation.setRotation((float) Math.toDegrees(rotation), 0);
             Interaction interaction = center.getWorld().spawn(rowLocation, Interaction.class, CreatureSpawnEvent.SpawnReason.CUSTOM, x -> {
                 x.setInteractionWidth(0.35f);
@@ -167,6 +169,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
                 container.set(GAME_ID, PersistentDataType.STRING, this.identifier.toString());
             });
 
+            System.out.println("Placed UUID: " + interaction.getUniqueId());
             this.rows.put(interaction.getUniqueId(), interaction);
         }
         // endregion
@@ -195,28 +198,29 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
             ConnectPlayer active = this.participants.get(currentTurn);
             if (active == null) return;
 
-            this.participants.values().forEach(participant -> {
+            this.sendActionBar(Component.text("[" + active.getName() + "'s Turn]"));
 
-                participant.sendActionBar(Component.text("[" + active.getName() + "'s Turn]"));
+            Player player = active.getPlayer();
+            Entity entity = player.getTargetEntity(5);
+            if (entity == null ) {
+                this.unapplyGlow();
+                return;
+            }
+            
+            
+            Interaction interaction = this.rows.get(entity.getUniqueId());
+            if (interaction == null) {
+                this.unapplyGlow();
+                return;
+            }
 
-                // Highlight the current row for the user
-                if (currentTurn.equals(participant.getUniqueId())) {
-                    Player player = participant.getPlayer();
-                    RayTraceResult entity = player.rayTraceEntities(2);
-                    if (entity == null || !(entity.getHitEntity() instanceof Interaction interaction)) {
-                        this.unapplyGlow();
-                        return;
-                    }
-
-                    Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
-                    if (row == null || !this.rows.containsKey(interaction.getUniqueId())) {
-                        this.unapplyGlow();
-                        return;
-                    }
-
-                    this.applyGlow(participant.getTokenColour(), row);
-                }
-            });
+            Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
+            if (row == null || !this.rows.containsKey(interaction.getUniqueId())) {
+                this.unapplyGlow();
+                return;
+            }
+            
+            this.applyGlow(active.getTokenColour(), row);
         }, 100, 150, TimeUnit.MILLISECONDS);
     }
 
@@ -227,6 +231,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
      */
     @Override
     public void stop(boolean cancelled) {
+
+        if (this.task != null) this.task.cancel();
+        this.task = null;
+
         this.active = false;
         this.turns = 0;
         this.participants.clear();
@@ -241,22 +249,20 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public void unload() {
         this.stop(true);
 
-        if (this.task != null) this.task.cancel();
-
-        this.rows.entrySet().removeIf(entry -> {
-            entry.getValue().remove();
-            return true;
+        this.rows.keySet().forEach(uuid -> {
+            Entity entity = Bukkit.getEntity(uuid);
+            if (entity != null) entity.remove();
         });
+        this.rows.clear();
 
-        for (ConnectToken token : this.tokens.values()) {
-            BlockDisplay display = token.getDisplay();
-            if (display == null || !display.isValid() || display.isDead()) continue;
-
-            display.remove();
-        }
-
-        if (this.displayBoard != null) this.displayBoard.remove();
+        this.tokens.values().forEach(token -> {
+            Entity entity = Bukkit.getEntity(token.getDisplay().getUniqueId());
+            if (entity != null) entity.remove();
+        });
         this.tokens.clear();
+
+        Entity board = Bukkit.getEntity(this.displayBoard.getUniqueId());
+        if (board != null) board.remove();
     }
 
     /**
