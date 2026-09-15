@@ -3,10 +3,8 @@ package dev.oribuin.arcade.command;
 import dev.oribuin.arcade.ArcadePlugin;
 import dev.oribuin.arcade.api.GameRegistry;
 import dev.oribuin.arcade.api.game.ArcadeGame;
-import dev.oribuin.arcade.games.connectfour.token.TokenColour;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.util.ArcadeUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -21,10 +19,7 @@ import org.incendo.cloud.annotations.suggestion.Suggestions;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class PlaceCommand {
 
@@ -34,13 +29,12 @@ public class PlaceCommand {
         this.plugin = plugin;
     }
 
-    @Command("arcade place <game> <duration>")
+    @Command("arcade place <game>")
     @Permission("arcade.place")
     @CommandDescription("Places connect four down into the world")
     public void place(
             @NotNull Player sender,
-            @Argument(value = "game", suggestions = "games") String game,
-            @Argument("duration") Duration duration
+            @Argument(value = "game", suggestions = "games") String game
     ) {
         PluginScheduler.get().runTaskAtLocation(sender.getLocation(), () -> {
             Block target = sender.getTargetBlockExact(5);
@@ -57,20 +51,13 @@ public class PlaceCommand {
 
             BlockFace direction = sender.getFacing();
             Location position = relative.getLocation().toCenterLocation().clone();
-            ArcadeGame<?> arcadeGame = GameRegistry.place(game.toLowerCase(), position, direction);
+            ArcadeGame<?> arcadeGame = GameRegistry.placeFreshGame(game.toLowerCase(), position, direction);
             if (arcadeGame == null) {
                 sender.sendMessage("Could not find a game with a matching identifier");
                 return;
             }
 
-            Bukkit.getOnlinePlayers().forEach(arcadeGame::join);
-            arcadeGame.start();
-            PluginScheduler.get().runTaskAtLocationLater(
-                    relative.getLocation(),
-                    arcadeGame::unload,
-                    duration.toSeconds(),
-                    TimeUnit.SECONDS
-            );
+            sender.sendMessage("You have placed a game of " + ArcadeUtils.niceify(game));
         });
     }
 
@@ -78,11 +65,5 @@ public class PlaceCommand {
     public List<String> gameSuggest(CommandContext<CommandSender> context, String input) {
         return GameRegistry.REGISTRY.keySet().stream().toList();
     }
-
-    @Suggestions("tokens")
-    public List<String> tokenSuggest(CommandContext<CommandSender> context, String input) {
-        return new ArrayList<>(TokenColour.COLORS.keySet());
-    }
-
 
 }

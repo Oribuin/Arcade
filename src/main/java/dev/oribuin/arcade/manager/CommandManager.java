@@ -36,7 +36,7 @@ public class CommandManager extends LegacyPaperCommandManager<CommandSender> imp
         // Register the command manager
         Configurable<ManagerSetting> commandSettings = this.settings();
         commandSettings.set(ManagerSetting.ALLOW_UNSAFE_REGISTRATION, true);
-//        commandSettings.set(ManagerSetting.OVERRIDE_EXISTING_COMMANDS, true);
+        commandSettings.set(ManagerSetting.OVERRIDE_EXISTING_COMMANDS, true);
 
         // Register argument parser
         this.parser = new AnnotationParser<>(this, CommandSender.class);

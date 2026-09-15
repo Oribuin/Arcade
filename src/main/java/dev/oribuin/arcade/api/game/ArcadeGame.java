@@ -1,13 +1,18 @@
 package dev.oribuin.arcade.api.game;
 
+import dev.oribuin.arcade.ArcadePlugin;
+import dev.oribuin.arcade.api.event.EventHandler;
 import dev.oribuin.arcade.api.participant.Participant;
 import dev.oribuin.arcade.config.Messages;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.audience.ForwardingAudience;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataHolder;
+import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -15,22 +20,27 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-public abstract class ArcadeGame<T extends Participant> implements ForwardingAudience.Single {
+public abstract class ArcadeGame<T extends Participant> extends EventHandler implements ForwardingAudience.Single {
 
-    protected final String identifier; // The identifier for the game 
+    public static final NamespacedKey GAME_ID = new NamespacedKey(ArcadePlugin.getInstance(), "game_id");
+
+    protected final UUID identifier; // The unique id for the game
+    protected final String name; // The identifier for the game 
     protected final Map<UUID, T> participants; // The people playing the game
     protected final double wager; // The money placed within the game 
     protected final int playerCount;  // The amount of people required to play the game
     protected Location location; // The centre location of the game
+    protected BlockFace direction;
     protected boolean active;
 
     /**
      * Creates a new arcade game for the plugin
      *
-     * @param identifier The identifier for the game
+     * @param name The identifier for the game
      */
-    public ArcadeGame(String identifier) {
-        this.identifier = identifier;
+    public ArcadeGame(String name) {
+        this.identifier = UUID.randomUUID();
+        this.name = name;
         this.participants = new HashMap<>();
         this.playerCount = 2;
         this.wager = 0.0;
@@ -73,8 +83,13 @@ public abstract class ArcadeGame<T extends Participant> implements ForwardingAud
         if (participant == null) return false;
 
         Messages.get().getPlayerJoinedGame().send(this, "player", player.getName());
-        Messages.get().getJoinedGame().send(player, "game", ArcadeUtils.niceify(this.identifier));
+        Messages.get().getJoinedGame().send(player, "game", ArcadeUtils.niceify(this.name));
         this.participants.put(player.getUniqueId(), participant);
+
+        // Check if the game has reached the required players
+        if (this.participants.size() == this.playerCount) {
+            this.start();
+        }
         return true;
     }
 
@@ -105,9 +120,9 @@ public abstract class ArcadeGame<T extends Participant> implements ForwardingAud
         }
 
         Messages.get().getLeftGame().send(player);
-        this.participants.remove(player.getUniqueId());
         if (isRagequit) Messages.get().getPlayerRageQuit().send(this, "player", player.getName());
         else Messages.get().getPlayerLeftGame().send(this, "player", player.getName());
+        this.participants.remove(player.getUniqueId());
         return true;
     }
 
@@ -147,8 +162,35 @@ public abstract class ArcadeGame<T extends Participant> implements ForwardingAud
         return Audience.audience(this.participants.values());
     }
 
-    public String getIdentifier() {
+    /**
+     * Apply the game identifier from the container
+     *
+     * @param dataHolder The data holder for the game
+     */
+    public final void applyIdentifier(PersistentDataHolder dataHolder) {
+        dataHolder.getPersistentDataContainer().set(GAME_ID, PersistentDataType.STRING, this.identifier.toString());
+    }
+
+    @Override
+    public String toString() {
+        return "ArcadeGame{" +
+                "identifier=" + identifier +
+                ", name='" + name + '\'' +
+                ", participants=" + participants +
+                ", wager=" + wager +
+                ", playerCount=" + playerCount +
+                ", location=" + location +
+                ", direction=" + direction +
+                ", active=" + active +
+                '}';
+    }
+
+    public UUID getIdentifier() {
         return identifier;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public Map<UUID, T> getParticipants() {
@@ -169,5 +211,21 @@ public abstract class ArcadeGame<T extends Participant> implements ForwardingAud
 
     public void setLocation(Location location) {
         this.location = location;
+    }
+
+    public BlockFace getDirection() {
+        return direction;
+    }
+
+    public void setDirection(BlockFace direction) {
+        this.direction = direction;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

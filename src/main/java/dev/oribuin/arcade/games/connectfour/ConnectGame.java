@@ -12,7 +12,6 @@ import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.task.ScheduledTask;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,13 +19,8 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -53,11 +47,11 @@ import java.util.stream.Collectors;
 
 import static dev.oribuin.arcade.games.connectfour.token.ConnectToken.TOKEN_SIZE;
 
-public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
+public class ConnectGame extends ArcadeGame<ConnectPlayer> {
 
-    public static final NamespacedKey CONNECT_TOKEN = NamespacedKey.fromString("connect_token", ArcadePlugin.getInstance());
-    public static final NamespacedKey CONNECT_BOARD = NamespacedKey.fromString("connect_board", ArcadePlugin.getInstance());
-    public static final NamespacedKey CONNECT_ROW = NamespacedKey.fromString("connect_row", ArcadePlugin.getInstance());
+    public static final NamespacedKey CONNECT_TOKEN = new NamespacedKey(ArcadePlugin.getInstance(), "connect_token");
+    public static final NamespacedKey CONNECT_BOARD = new NamespacedKey(ArcadePlugin.getInstance(), "connect_board");
+    public static final NamespacedKey CONNECT_ROW = new NamespacedKey(ArcadePlugin.getInstance(), "connect_row");
 
     private final int gridWidth;
     private final int gridHeight;
@@ -68,8 +62,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     private BlockDisplay displayBoard;
     private ScheduledTask task;
     private Integer glowRow;
-    private boolean alreadyWon; // todo temp
     private List<TokenColour> playable;
+    private int turns;
 
     /**
      * Creates a new arcade game for the plugin
@@ -81,15 +75,12 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         this.tokenGap = 0.125F;
         this.tokens = HashBasedTable.create(this.gridHeight, this.gridWidth);
         this.rows = new HashMap<>();
-        this.alreadyWon = false;
         this.glowRow = null;
         this.turnQueue = new ArrayDeque<>();
         this.playable = new ArrayList<>(TokenColour.COLORS.values());
-    }
 
-    public boolean isRow(Entity entity) {
-        assert CONNECT_ROW != null;
-        return entity.getPersistentDataContainer().has(CONNECT_ROW);
+        // Register playable events
+        this.registerListener(PlayerInteractAtEntityEvent.class, this::handleInteraction);
     }
 
     /**
@@ -101,11 +92,11 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     public void place(@NotNull Location location, @NotNull BlockFace direction) {
         this.unload();
         this.location = location;
+        this.direction = direction;
 
         float rotation = this.getRotation(direction);
 
         // region Spawn the tokens into the world
-
         double distance = TOKEN_SIZE + this.tokenGap;
         float totalWidth = (float) (distance * this.gridWidth) - this.tokenGap;
         float totalHeight = (float) (distance * this.gridHeight) - this.tokenGap;
@@ -151,7 +142,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
             x.setBillboard(Display.Billboard.FIXED);
 
             PersistentDataContainer container = x.getPersistentDataContainer();
-            container.set(ConnectGame.CONNECT_BOARD, PersistentDataType.INTEGER, 0);
+            container.set(CONNECT_BOARD, PersistentDataType.INTEGER, 0);
+            container.set(GAME_ID, PersistentDataType.STRING, this.identifier.toString());
         });
         // endregion
 
@@ -162,7 +154,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
             double rowRotatedX = rowLocalX * Math.cos(rotation);
             double rowRotatedZ = -rowLocalX * Math.sin(rotation);
 
-            Location rowLocation = center.clone().add(rowRotatedX, TOKEN_SIZE, rowRotatedZ);
+            Location rowLocation = center.clone().add(rowRotatedX, 0, rowRotatedZ);
             rowLocation.setRotation((float) Math.toDegrees(rotation), 0);
             Interaction interaction = center.getWorld().spawn(rowLocation, Interaction.class, CreatureSpawnEvent.SpawnReason.CUSTOM, x -> {
                 x.setInteractionWidth(0.35f);
@@ -171,7 +163,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
                 x.setGlowing(true);
 
                 PersistentDataContainer container = x.getPersistentDataContainer();
-                container.set(ConnectGame.CONNECT_ROW, PersistentDataType.INTEGER, currentRow);
+                container.set(CONNECT_ROW, PersistentDataType.INTEGER, currentRow);
+                container.set(GAME_ID, PersistentDataType.STRING, this.identifier.toString());
             });
 
             this.rows.put(interaction.getUniqueId(), interaction);
@@ -187,12 +180,12 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         this.wipeBoard();
         this.playable = new ArrayList<>(TokenColour.COLORS.values());
         this.active = true;
+        this.turns = 0;
 
         // Selects the last player
         this.turnQueue.clear();
         this.turnQueue.addAll(this.participants.keySet());
 
-        Bukkit.getPluginManager().registerEvents(this, ArcadePlugin.getInstance());
         this.task = PluginScheduler.get().runTaskTimerAtLocation(this.location, () -> {
             if (!this.active) return;
 
@@ -209,7 +202,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
                 // Highlight the current row for the user
                 if (currentTurn.equals(participant.getUniqueId())) {
                     Player player = participant.getPlayer();
-                    RayTraceResult entity = player.rayTraceEntities(5);
+                    RayTraceResult entity = player.rayTraceEntities(2);
                     if (entity == null || !(entity.getHitEntity() instanceof Interaction interaction)) {
                         this.unapplyGlow();
                         return;
@@ -235,6 +228,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     @Override
     public void stop(boolean cancelled) {
         this.active = false;
+        this.turns = 0;
         this.participants.clear();
         this.turnQueue.clear();
         this.wipeBoard();
@@ -247,7 +241,6 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
     public void unload() {
         this.stop(true);
 
-        HandlerList.unregisterAll(this);
         if (this.task != null) this.task.cancel();
 
         this.rows.entrySet().removeIf(entry -> {
@@ -283,8 +276,13 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         return colour;
     }
 
-    @EventHandler(priority = EventPriority.LOW)
-    public void onInteract(PlayerInteractAtEntityEvent event) {
+
+    /**
+     * Handle interacting with the player for the game
+     *
+     * @param event The event to start
+     */
+    public void handleInteraction(PlayerInteractAtEntityEvent event) {
         Player player = event.getPlayer();
         if (!(event.getRightClicked() instanceof Interaction interaction)) return;
 
@@ -292,16 +290,15 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
         ConnectPlayer participant = this.participants.get(player.getUniqueId());
         if (participant == null || CONNECT_ROW == null) return;
         if (!this.rows.containsKey(interaction.getUniqueId())) return;
-        if (!this.active) return;
 
         // Make sure the interaction is a row
         Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
         if (row == null) return;
 
         if (this.dropToken(player, participant.getTokenColour(), row)) {
+            this.turns++;
             boolean winningToken = this.checkBoard(participant.getTokenColour());
-            if (!this.alreadyWon && winningToken) {
-                this.alreadyWon = true;
+            if (winningToken) {
                 this.active = false;
                 this.applyUniversalGlow(participant.getTokenColour()); // User won so the whole game should light up
 
@@ -309,16 +306,19 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
                         .filter(x -> x.getUniqueId() != player.getUniqueId())
                         .map(x -> x.getPlayer().getName())
                         .collect(Collectors.joining(", "));
-                
+
                 if (losers.isEmpty()) losers = "N/A";
-                        
+
                 Messages.get().getPlayerWon().send(this,
-                        "game", ArcadeUtils.niceify(this.identifier),
+                        "game", ArcadeUtils.niceify(this.name),
                         "winner", player.getName(),
                         "losers", losers
                 );
-                PluginScheduler.get().runTaskAtLocationLater(this.location, this::unload, 3 * 60);
+                PluginScheduler.get().runTaskAtLocationLater(this.location, () -> this.stop(false), 3 * 60);
+                return;
             }
+
+            if (this.turns >= (this.gridHeight * this.gridWidth)) this.stop(true);
         } else {
             player.sendMessage("You cannot place a token in this row");
         }
@@ -347,7 +347,13 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> implements Listener {
      */
     @NotNull
     private ConnectToken createEmptyToken(@NotNull Location position) {
-        BlockDisplay display = position.getWorld().spawn(position, BlockDisplay.class, CreatureSpawnEvent.SpawnReason.CUSTOM);
+        BlockDisplay display = position.getWorld().spawn(
+                position,
+                BlockDisplay.class,
+                CreatureSpawnEvent.SpawnReason.CUSTOM,
+                this::applyIdentifier
+        );
+
         ConnectToken token = new ConnectToken(TokenColour.EMPTY, display);
         token.update();
         return token;

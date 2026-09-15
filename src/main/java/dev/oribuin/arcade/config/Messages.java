@@ -49,14 +49,14 @@ public class Messages {
 
     @Comment("The message sent when a player ragequits a game")
     private TextMessage playerRageQuit = new TextMessage(PREFIX + "<#93bc80><player> <white>has ragequit from the match");
-    
+
     @Comment("The message sent when a player does something while it's not their turn")
     private TextMessage notUsersTurn = new TextMessage(PREFIX + "Please wait for your turn before you do this");
-    
+
     @Comment("The message sent when a player has won")
     private TextMessage playerWon = new TextMessage(PREFIX + "<#93bc80><winner> <white>has won against <#93bc80><losers>")
             .titleHeader("<#93bc80><b>Victory Royale")
-            .titleSubtitle("<white>You have won <game>");
+            .titleSubtitle("<white><winner> has won <game>");
 
     public static Messages get() {
         return ArcadePlugin.getInstance().getConfigLoader().get(Messages.class);

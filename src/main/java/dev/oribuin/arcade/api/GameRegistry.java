@@ -8,11 +8,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 public class GameRegistry {
 
     public static final Map<String, Supplier<? extends ArcadeGame<?>>> REGISTRY = new HashMap<>();
+    public static final Map<UUID, ArcadeGame<?>> GAME_INSTANCES = new HashMap<>();
 
     /**
      * Register a new arcade game into the plugin
@@ -27,6 +29,34 @@ public class GameRegistry {
     }
 
     /**
+     * Get the game instance of the
+     *
+     * @param instance The game instances
+     * @param <T>      The type of game
+     * @return The resulting game
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends ArcadeGame<?>> T getInstance(UUID instance) {
+        return (T) GAME_INSTANCES.get(instance);
+    }
+
+    /**
+     * Get the game that a user is currently participating in
+     *
+     * @param user The user potentially participating in the game
+     * @param <T>  The type of game
+     * @return The resulting game
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends ArcadeGame<?>> T getParticipating(UUID user) {
+        return GAME_INSTANCES.values().stream()
+                .filter(x -> x.getParticipants().containsKey(user))
+                .map(x -> (T) x)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
      * Place a specified arcade game into the world with a set direction
      *
      * @param identifier The identifier of the game
@@ -37,14 +67,14 @@ public class GameRegistry {
      */
     @Nullable
     @SuppressWarnings("unchecked")
-    public static <T extends ArcadeGame<?>> T place(String identifier, Location position, BlockFace direction) {
+    public static <T extends ArcadeGame<?>> T placeFreshGame(String identifier, Location position, BlockFace direction) {
         Supplier<? extends ArcadeGame<?>> game = REGISTRY.get(identifier);
         if (identifier == null) return null;
 
         ArcadeGame<?> result = game.get();
         result.place(position, direction);
+        GAME_INSTANCES.put(result.getIdentifier(), result);
         return (T) result;
     }
-
 
 }
