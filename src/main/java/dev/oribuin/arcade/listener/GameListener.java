@@ -4,6 +4,7 @@ import dev.oribuin.arcade.ArcadePlugin;
 import dev.oribuin.arcade.api.GameRegistry;
 import dev.oribuin.arcade.api.game.ArcadeGame;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,6 +13,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +29,25 @@ public class GameListener implements Listener {
     }
 
     // region General checks for all minigames
+
+    /**
+     * Remove any entities that are from a game that no longer has an instance
+     *
+     * @param event The chunk load event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onLoad(@NotNull ChunkLoadEvent event) {
+        for (Entity entity : event.getChunk().getEntities()) {
+            PersistentDataContainer container = entity.getPersistentDataContainer();
+            String gameId = container.get(ArcadeGame.GAME_ID, PersistentDataType.STRING);
+            if (gameId == null) continue;
+
+            // Remove any non-existent any instances
+            if (!GameRegistry.get().getInstances().containsKey(UUID.fromString(gameId))) {
+                entity.remove();
+            }
+        }
+    }
 
     /**
      * Handle a listener check for whether the player has ragequit from the game

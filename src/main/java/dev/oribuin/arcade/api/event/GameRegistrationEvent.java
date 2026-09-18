@@ -20,7 +20,7 @@ public class GameRegistrationEvent extends Event {
     public GameRegistrationEvent() {
         super(!Bukkit.isPrimaryThread());
     }
-    
+
     /**
      * Register a new arcade game into the plugin
      *

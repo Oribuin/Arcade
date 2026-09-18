@@ -37,7 +37,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -400,7 +399,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
 
             if (this.turns >= (this.gridHeight * this.gridWidth)) this.stop(true);
         } else {
-            player.sendMessage("You cannot place a token in this row");
+            Messages.get().getConnectFour().getNotUsersTurn().send(player);
         }
     }
 
@@ -465,14 +464,14 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         int maximum = Collections.max(rowTokens.keySet()) + 1;
 
         int available = minimum;
-        for (int i = minimum; i < maximum; i++) {
+        for (int i = minimum; i <= maximum; i++) {
             ConnectToken connectToken = rowTokens.get(i);
             available = i;
 
             if (connectToken != null && connectToken.getColour() == TokenColour.EMPTY) break;
         }
 
-        if (available == maximum) return false;
+        if (available == maximum) return false; // row is full
 
         ConnectToken connectToken = rowTokens.get(available);
         BlockDisplay display = connectToken.getDisplay();

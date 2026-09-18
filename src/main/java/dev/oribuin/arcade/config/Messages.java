@@ -65,7 +65,21 @@ public class Messages {
     private String activeInfoStart = "<#93bc80>";
 
     private String inactiveInfoBoard = "<#93bc80>Waiting for <white><remaining> <#93bc80>players";
-    
+
+    @Comment("The messages sent for connect four")
+    private ConnectFour connectFour = new ConnectFour();
+
+    @ConfigSerializable
+    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
+    public static class ConnectFour {
+
+        @Comment("The message sent when a player tries to place a token on a row that is full")
+        private TextMessage notUsersTurn = new TextMessage(PREFIX + "You cannot place a token on this row");
+
+        public TextMessage getNotUsersTurn() {
+            return notUsersTurn;
+        }
+    }
 
     public static Messages get() {
         return ArcadePlugin.getInstance().getConfigLoader().get(Messages.class);
@@ -141,5 +155,9 @@ public class Messages {
 
     public String getInactiveInfoBoard() {
         return inactiveInfoBoard;
+    }
+
+    public ConnectFour getConnectFour() {
+        return connectFour;
     }
 }

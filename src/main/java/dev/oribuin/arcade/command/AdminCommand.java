@@ -108,7 +108,7 @@ public class AdminCommand {
                 sender.sendMessage("We couldn't find the game you are looking for");
                 return;
             }
-            
+
             game.unload();
             GameRegistry.get().getInstances().remove(game.getIdentifier());
             this.plugin.getDataManager().removeGame(game);

@@ -10,8 +10,6 @@ import dev.oribuin.arcade.games.connectfour.ConnectGame;
 import dev.oribuin.arcade.listener.GameListener;
 import dev.oribuin.arcade.manager.CommandManager;
 import dev.oribuin.arcade.manager.DataManager;
-import dev.oribuin.arcade.scheduler.PluginScheduler;
-import dev.oribuin.arcade.util.NMSUtil;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -37,12 +35,12 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
         this.configLoader.loadConfig(DatabaseSettings.class, "database");
 
         new GameRegistry();
-        
+
         // Register plugin listeners
         PluginManager pluginManager = this.getServer().getPluginManager();
         pluginManager.registerEvents(this, this);
         pluginManager.registerEvents(new GameListener(this), this);
-        
+
         // Load the plugin managers
         this.commandManager = new CommandManager(this);
         this.dataManager = new DataManager(this);
@@ -59,7 +57,7 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
         System.out.println("Register game event called");
         event.register("connect_four", ConnectGame::new);
     }
-    
+
     @Override
     public void onDisable() {
         for (ArcadeGame<?> game : new ArrayList<>(GameRegistry.get().getInstances().values())) {

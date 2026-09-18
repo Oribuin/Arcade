@@ -4,14 +4,12 @@ import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.UUID;
-
 /**
  * Create a new game instance identifier used to create, load and delete games from the plugin
  *
- * @param name       The name for the game
- * @param position   The position of the game
- * @param direction  The location of the game
+ * @param name      The name for the game
+ * @param position  The position of the game
+ * @param direction The location of the game
  */
 public record GameInstance(String name, Location position, BlockFace direction) {
 

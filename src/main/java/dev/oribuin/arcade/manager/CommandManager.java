@@ -48,7 +48,7 @@ public class CommandManager extends LegacyPaperCommandManager<CommandSender> imp
             this.registerAsynchronousCompletions();
         }
 
-        
+
         this.exceptionController()
                 .registerHandler(NoPermissionException.class, x -> Messages.get()
                         .getNoPermission().send(x.context().sender())

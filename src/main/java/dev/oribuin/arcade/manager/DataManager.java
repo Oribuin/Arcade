@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -117,7 +116,7 @@ public class DataManager implements Manager {
             }
         }));
     }
-    
+
     /**
      * Remove a game instance from the plugin
      *
