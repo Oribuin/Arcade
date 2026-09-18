@@ -424,7 +424,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
      * @param colour The colour of the token
      */
     private void applyUniversalGlow(@NotNull TokenColour colour) {
-        this.tokens.rowKeySet().forEach(row -> applyGlow(colour, row));
+        this.tokens.rowKeySet().forEach(row -> setGlowColour(row, colour));
     }
 
     public void wipeBoard() {
