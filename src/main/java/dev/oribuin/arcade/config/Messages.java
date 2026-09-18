@@ -58,6 +58,15 @@ public class Messages {
             .titleHeader("<#93bc80><b>Victory Royale")
             .titleSubtitle("<white><winner> has won <game>");
 
+    @Comment("The joining message between each player on the info board")
+    private String activeInfoJoiner = " <gray>vs ";
+
+    @Comment("The starting message on the info board")
+    private String activeInfoStart = "<#93bc80>";
+
+    private String inactiveInfoBoard = "<#93bc80>Waiting for <white><remaining> <#93bc80>players";
+    
+
     public static Messages get() {
         return ArcadePlugin.getInstance().getConfigLoader().get(Messages.class);
     }
@@ -120,5 +129,17 @@ public class Messages {
 
     public TextMessage getPlayerWon() {
         return playerWon;
+    }
+
+    public String getActiveInfoJoiner() {
+        return activeInfoJoiner;
+    }
+
+    public String getActiveInfoStart() {
+        return activeInfoStart;
+    }
+
+    public String getInactiveInfoBoard() {
+        return inactiveInfoBoard;
     }
 }

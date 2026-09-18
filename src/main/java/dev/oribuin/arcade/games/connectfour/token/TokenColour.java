@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.print.DocFlavor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,5 +71,8 @@ public record TokenColour(Material icon, Color color) {
         return COLORS.getOrDefault(id, EMPTY);
     }
 
+    public String asHex() {
+        return String.format("#%02x%02x%02x", this.color.getRed(), this.color.getGreen(), this.color.getBlue());
+    }
 
 }

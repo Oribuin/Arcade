@@ -11,6 +11,7 @@ import dev.oribuin.arcade.games.connectfour.token.TokenColour;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.task.ScheduledTask;
 import dev.oribuin.arcade.util.ArcadeUtils;
+import dev.oribuin.arcade.util.Placeholders;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -22,6 +23,7 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -60,6 +62,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     private final Map<UUID, Interaction> rows;
     private final Queue<UUID> turnQueue;
     private BlockDisplay displayBoard;
+    private UUID infoBoard;
     private ScheduledTask task;
     private Integer glowRow;
     private List<TokenColour> playable;
@@ -92,7 +95,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public void place(@NotNull Location location, @NotNull BlockFace direction) {
         this.location = location;
         this.direction = direction;
-        
+
         float rotation = this.getRotation(direction);
 
         // region Spawn the tokens into the world
@@ -179,6 +182,58 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
             this.rows.put(interaction.getUniqueId(), interaction);
         }
         // endregion
+
+        // region Add the info board for the game
+        Location infoLoc = location.clone().add(0, totalHeight + 0.25, 0);
+        TextDisplay textDisplay = center.getWorld().spawn(infoLoc, TextDisplay.class, CreatureSpawnEvent.SpawnReason.CUSTOM, x -> {
+            x.setShadowed(true);
+            x.setAlignment(TextDisplay.TextAlignment.CENTER);
+            x.setBillboard(Display.Billboard.CENTER);
+            x.setDisplayWidth(totalWidth);
+            x.text(ArcadeUtils.kyorify(
+                    Messages.get().getInactiveInfoBoard(),
+                    Placeholders.of("remaining", this.playerCount - this.participants.size())
+            ));
+            this.applyIdentifier(x);
+        });
+        this.infoBoard = textDisplay.getUniqueId();
+        // endregion
+    }
+
+    /**
+     * A request from a player to join a game
+     *
+     * @param player The player who sent the game
+     */
+    @Override
+    public boolean join(Player player) {
+        boolean result = super.join(player);
+        if (this.playerCount - this.participants.size() != 0) {
+            this.updateText(ArcadeUtils.kyorify(
+                    Messages.get().getInactiveInfoBoard(),
+                    Placeholders.of("remaining", this.playerCount - this.participants.size())
+            ));
+        }
+        return result;
+    }
+
+    /**
+     * A request from the player to leave the game
+     *
+     * @param player     The player leaving the game
+     * @param isRagequit Whether the player ragequit from the game
+     * @return Whether the player successfully left
+     */
+    @Override
+    public boolean leave(Player player, boolean isRagequit) {
+        boolean result = super.leave(player, isRagequit);
+        if (this.playerCount - this.participants.size() != 0) {
+            this.updateText(ArcadeUtils.kyorify(
+                    Messages.get().getInactiveInfoBoard(),
+                    Placeholders.of("remaining", this.playerCount - this.participants.size())
+            ));
+        }
+        return result;
     }
 
     /**
@@ -194,6 +249,15 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         // Selects the last player
         this.turnQueue.clear();
         this.turnQueue.addAll(this.participants.keySet());
+
+        String joining = Messages.get().getActiveInfoStart() + this.participants.values()
+                .stream()
+                .map(x -> "<" + x.getTokenColour().asHex() + ">" + x.getName())
+                .collect(Collectors.joining(
+                        Messages.get().getActiveInfoJoiner()
+                ));
+
+        this.updateText(ArcadeUtils.kyorify(joining));
 
         this.task = PluginScheduler.get().runTaskTimerAtLocation(this.location, () -> {
             if (!this.active) return;
@@ -212,7 +276,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
                 this.unapplyGlow();
                 return;
             }
-            
+
             Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
             if (row == null || !this.rows.containsKey(entity.getUniqueId())) {
                 this.unapplyGlow();
@@ -239,6 +303,11 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         this.participants.clear();
         this.turnQueue.clear();
         this.wipeBoard();
+
+        this.updateText(ArcadeUtils.kyorify(
+                Messages.get().getInactiveInfoBoard(),
+                Placeholders.of("remaining", this.playerCount - this.participants.size())
+        ));
     }
 
     /**
@@ -262,6 +331,9 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
 
         Entity board = Bukkit.getEntity(this.displayBoard.getUniqueId());
         if (board != null) board.remove();
+
+        Entity infoBoard = Bukkit.getEntity(this.infoBoard);
+        if (infoBoard != null) infoBoard.remove();
     }
 
     /**
@@ -290,7 +362,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public void handleInteraction(PlayerInteractAtEntityEvent event) {
         Player player = event.getPlayer();
         if (!(event.getRightClicked() instanceof Interaction interaction)) return;
-        
+
         // Check whether the player is a participant
         ConnectPlayer participant = this.participants.get(player.getUniqueId());
         if (participant == null) return;
@@ -402,7 +474,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         ConnectToken connectToken = rowTokens.get(available);
         BlockDisplay display = connectToken.getDisplay();
         if (display == null) return false;
-        
+
         connectToken.setColour(colour);
         connectToken.update(display);
 
@@ -499,6 +571,12 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
             token.update(display);
             this.tokens.put(row, cell.getKey(), token);
         }
+    }
+
+    public void updateText(Component component) {
+        if (!(this.location.getWorld().getEntity(this.infoBoard) instanceof TextDisplay display)) return;
+
+        display.text(component);
     }
 
     /**
