@@ -37,6 +37,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -247,8 +248,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         this.turns = 0;
 
         // Selects the last player
+        List<UUID> shuffled = new ArrayList<>(this.participants.keySet());
+        Collections.shuffle(shuffled);
         this.turnQueue.clear();
-        this.turnQueue.addAll(this.participants.keySet());
+        this.turnQueue.addAll(shuffled);
 
         String joining = Messages.get().getActiveInfoStart() + this.participants.values()
                 .stream()
