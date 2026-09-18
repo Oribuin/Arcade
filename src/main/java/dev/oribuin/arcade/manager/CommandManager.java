@@ -1,7 +1,7 @@
 package dev.oribuin.arcade.manager;
 
 import dev.oribuin.arcade.ArcadePlugin;
-import dev.oribuin.arcade.command.PlaceCommand;
+import dev.oribuin.arcade.command.AdminCommand;
 import dev.oribuin.arcade.config.Messages;
 import org.bukkit.command.CommandSender;
 import org.incendo.cloud.SenderMapper;
@@ -63,7 +63,7 @@ public class CommandManager extends LegacyPaperCommandManager<CommandSender> imp
         // Register additional stuff down here :3
         // Register all the plugin commands
         try {
-            this.parser.parse(new PlaceCommand(this.plugin));
+            this.parser.parse(new AdminCommand(this.plugin));
         } catch (IllegalArgumentException ex) {
             owningPlugin.getLogger().severe("There was an issue parsing a command: " + ex.getMessage());
         }

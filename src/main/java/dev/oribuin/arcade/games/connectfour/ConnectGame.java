@@ -13,7 +13,6 @@ import dev.oribuin.arcade.scheduler.task.ScheduledTask;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -27,7 +26,6 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Transformation;
 import org.jetbrains.annotations.NotNull;
 import org.joml.AxisAngle4f;
@@ -94,8 +92,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public void place(@NotNull Location location, @NotNull BlockFace direction) {
         this.location = location;
         this.direction = direction;
-
-        System.out.println("Placing with identifier " + this.identifier);
+        
         float rotation = this.getRotation(direction);
 
         // region Spawn the tokens into the world
@@ -116,9 +113,19 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
                 double rotatedZ = -localX * Math.sin(rotation);
 
                 Location tokenLocation = center.clone().add(rotatedX, localY, rotatedZ);
+                tokenLocation.setRotation((float) Math.toDegrees(rotation), 0);
 
-                ConnectToken token = this.createEmptyToken(tokenLocation);
-                token.getDisplay().setRotation((float) Math.toDegrees(rotation), 0);
+                BlockDisplay display = tokenLocation.getWorld().spawn(
+                        tokenLocation,
+                        BlockDisplay.class,
+                        CreatureSpawnEvent.SpawnReason.CUSTOM,
+                        x -> {
+                            ConnectToken.apply(x, TokenColour.EMPTY);
+                            this.applyIdentifier(x);
+                        }
+                );
+
+                ConnectToken token = new ConnectToken(TokenColour.EMPTY, display.getUniqueId());
                 this.tokens.put(row, col, token);
             }
         }
@@ -169,7 +176,6 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
                 container.set(GAME_ID, PersistentDataType.STRING, this.identifier.toString());
             });
 
-            System.out.println("Placed UUID: " + interaction.getUniqueId());
             this.rows.put(interaction.getUniqueId(), interaction);
         }
         // endregion
@@ -202,24 +208,17 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
 
             Player player = active.getPlayer();
             Entity entity = player.getTargetEntity(5);
-            if (entity == null ) {
+            if (!(entity instanceof Interaction interaction) || !this.rows.containsKey(interaction.getUniqueId())) {
                 this.unapplyGlow();
                 return;
             }
             
-            
-            Interaction interaction = this.rows.get(entity.getUniqueId());
-            if (interaction == null) {
+            Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
+            if (row == null || !this.rows.containsKey(entity.getUniqueId())) {
                 this.unapplyGlow();
                 return;
             }
 
-            Integer row = interaction.getPersistentDataContainer().get(CONNECT_ROW, PersistentDataType.INTEGER);
-            if (row == null || !this.rows.containsKey(interaction.getUniqueId())) {
-                this.unapplyGlow();
-                return;
-            }
-            
             this.applyGlow(active.getTokenColour(), row);
         }, 100, 150, TimeUnit.MILLISECONDS);
     }
@@ -256,8 +255,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         this.rows.clear();
 
         this.tokens.values().forEach(token -> {
-            Entity entity = Bukkit.getEntity(token.getDisplay().getUniqueId());
-            if (entity != null) entity.remove();
+            BlockDisplay display = token.getDisplay();
+            if (display != null) display.remove();
         });
         this.tokens.clear();
 
@@ -291,10 +290,10 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public void handleInteraction(PlayerInteractAtEntityEvent event) {
         Player player = event.getPlayer();
         if (!(event.getRightClicked() instanceof Interaction interaction)) return;
-
+        
         // Check whether the player is a participant
         ConnectPlayer participant = this.participants.get(player.getUniqueId());
-        if (participant == null || CONNECT_ROW == null) return;
+        if (participant == null) return;
         if (!this.rows.containsKey(interaction.getUniqueId())) return;
 
         // Make sure the interaction is a row
@@ -346,47 +345,26 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     }
 
     /**
-     * Create an empty token within the plugin
-     *
-     * @param position The position
-     * @return The token of the player
-     */
-    @NotNull
-    private ConnectToken createEmptyToken(@NotNull Location position) {
-        BlockDisplay display = position.getWorld().spawn(
-                position,
-                BlockDisplay.class,
-                CreatureSpawnEvent.SpawnReason.CUSTOM,
-                this::applyIdentifier
-        );
-
-        ConnectToken token = new ConnectToken(TokenColour.EMPTY, display);
-        token.update();
-        return token;
-    }
-
-    /**
      * Apply a universal glow to the colour, Typically used when someone has won
      *
      * @param colour The colour of the token
      */
     private void applyUniversalGlow(@NotNull TokenColour colour) {
-        this.tokens.values().forEach(x -> {
-            x.getDisplay().setGlowing(true);
-            x.getDisplay().setGlowColorOverride(colour.color());
-        });
+        this.tokens.rowKeySet().forEach(row -> applyGlow(colour, row));
     }
 
     public void wipeBoard() {
         if (this.task != null) this.task.cancel();
 
-        for (ConnectToken token : this.tokens.values()) {
+        for (Table.Cell<Integer, Integer, ConnectToken> cell : new ArrayList<>(this.tokens.cellSet())) {
+            ConnectToken token = cell.getValue();
             BlockDisplay display = token.getDisplay();
             if (display == null || !display.isValid() || display.isDead()) continue;
 
             display.setGlowing(false);
             token.setColour(TokenColour.EMPTY);
-            token.update();
+            token.update(display);
+            this.tokens.put(cell.getRowKey(), cell.getColumnKey(), token);
         }
     }
 
@@ -422,8 +400,11 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         if (available == maximum) return false;
 
         ConnectToken connectToken = rowTokens.get(available);
+        BlockDisplay display = connectToken.getDisplay();
+        if (display == null) return false;
+        
         connectToken.setColour(colour);
-        connectToken.update();
+        connectToken.update(display);
 
         this.tokens.put(row, available, connectToken);
         this.turnQueue.poll();
@@ -500,18 +481,24 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public void applyGlow(@NotNull TokenColour colour, Integer row) {
         if (Objects.equals(row, this.glowRow)) return;
         if (this.glowRow != null) { // literally not always true intellij
-            this.tokens.row(glowRow).values().forEach(x -> {
-                x.getDisplay().setGlowColorOverride(Color.WHITE);
-                x.getDisplay().setGlowing(false);
-            });
+            this.setGlowColour(glowRow, TokenColour.EMPTY);
         }
 
-        this.tokens.row(row).values().forEach(x -> {
-            x.getDisplay().setGlowColorOverride(colour.color());
-            x.getDisplay().setGlowing(true);
-        });
-
+        this.setGlowColour(row, colour);
         this.glowRow = row;
+    }
+
+    public void setGlowColour(int row, TokenColour colour) {
+        for (Map.Entry<Integer, ConnectToken> cell : new HashMap<>(this.tokens.row(row)).entrySet()) {
+            ConnectToken token = cell.getValue();
+            BlockDisplay display = token.getDisplay();
+            if (display == null || !display.isValid() || display.isDead()) continue;
+
+            display.setGlowing(colour != TokenColour.EMPTY);
+            display.setGlowColorOverride(colour.color());
+            token.update(display);
+            this.tokens.put(row, cell.getKey(), token);
+        }
     }
 
     /**
@@ -520,10 +507,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public void unapplyGlow() {
         if (this.glowRow == null) return;
 
-        this.tokens.row(this.glowRow).values().forEach(x -> {
-            x.getDisplay().setGlowColorOverride(Color.WHITE);
-            x.getDisplay().setGlowing(false);
-        });
+        this.setGlowColour(this.glowRow, TokenColour.EMPTY);
         this.glowRow = null;
     }
 

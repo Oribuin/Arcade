@@ -74,7 +74,7 @@ public class GameListener implements Listener {
         Location destination = event.getTo();
 
         // Check if there are any games
-        if (GameRegistry.GAME_INSTANCES.isEmpty()) return;
+        if (GameRegistry.get().getInstances().isEmpty()) return;
 
         // Player has to physically move their body, not just their head
         if (from.getBlockX() != destination.getBlockX() || from.getBlockY() != destination.getBlockY() || from.getBlockZ() != destination.getBlockZ()) {
@@ -107,7 +107,7 @@ public class GameListener implements Listener {
         String gameId = container.get(ArcadeGame.GAME_ID, PersistentDataType.STRING);
         if (gameId == null) return;
 
-        ArcadeGame<?> game = GameRegistry.getInstance(UUID.fromString(gameId));
+        ArcadeGame<?> game = GameRegistry.get(UUID.fromString(gameId));
         if (game == null || game.getLocation() == null) return;
 
         // Handle the event for the player participating

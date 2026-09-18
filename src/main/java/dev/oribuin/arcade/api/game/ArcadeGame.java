@@ -113,16 +113,17 @@ public abstract class ArcadeGame<T extends Participant> extends EventHandler imp
             return false;
         }
 
-        // If the game is active, stop it instead
-        if (this.active) {
-            this.stop(true);
-            return true;
-        }
-
+        // Tell the player they left the game
         Messages.get().getLeftGame().send(player);
         if (isRagequit) Messages.get().getPlayerRageQuit().send(this, "player", player.getName());
         else Messages.get().getPlayerLeftGame().send(this, "player", player.getName());
         this.participants.remove(player.getUniqueId());
+
+        // If the game is active, stop it
+        if (this.active && this.participants.size() != this.playerCount) {
+            this.stop(true);
+        }
+
         return true;
     }
 
@@ -184,7 +185,7 @@ public abstract class ArcadeGame<T extends Participant> extends EventHandler imp
                 ", active=" + active +
                 '}';
     }
-    
+
     public UUID getIdentifier() {
         return identifier;
     }

@@ -20,8 +20,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 
-import static dev.oribuin.arcade.api.GameRegistry.GAME_INSTANCES;
-
 public class ArcadePlugin extends JavaPlugin implements Listener {
 
     private static ArcadePlugin instance;
@@ -38,17 +36,17 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
         this.configLoader.loadConfig(Messages.class, "messages");
         this.configLoader.loadConfig(DatabaseSettings.class, "database");
 
-        // Load the plugin managers
-        this.commandManager = new CommandManager(this);
-        this.dataManager = new DataManager(this);
-        this.dataManager.reload(this);
-
+        new GameRegistry();
+        
         // Register plugin listeners
         PluginManager pluginManager = this.getServer().getPluginManager();
         pluginManager.registerEvents(this, this);
         pluginManager.registerEvents(new GameListener(this), this);
-
-        // Register the games into the plugin
+        
+        // Load the plugin managers
+        this.commandManager = new CommandManager(this);
+        this.dataManager = new DataManager(this);
+        this.dataManager.reload(this);
     }
 
     /**
@@ -58,17 +56,17 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onRegister(GameRegistrationEvent event) {
+        System.out.println("Register game event called");
         event.register("connect_four", ConnectGame::new);
     }
     
     @Override
     public void onDisable() {
-        for (ArcadeGame<?> game : new ArrayList<>(GAME_INSTANCES.values())) {
-            if (NMSUtil.isFolia()) PluginScheduler.get().runTaskAtLocation(game.getLocation(), game::unload);
-            else game.unload();
+        for (ArcadeGame<?> game : new ArrayList<>(GameRegistry.get().getInstances().values())) {
+            game.unload();
         }
 
-        GAME_INSTANCES.clear();
+        GameRegistry.get().getInstances().clear();
     }
 
     public static ArcadePlugin getInstance() {

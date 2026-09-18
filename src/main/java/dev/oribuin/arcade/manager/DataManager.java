@@ -10,9 +10,11 @@ import dev.oribuin.arcade.database.connector.MySQLConnector;
 import dev.oribuin.arcade.database.connector.SQLiteConnector;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.util.ArcadeUtils;
+import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
+import org.intellij.lang.annotations.Subst;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.PreparedStatement;
@@ -61,17 +63,17 @@ public class DataManager implements Manager {
             this.plugin.getLogger().info("Data manager connected using SQLite.");
         }
 
-        this.async(() -> this.connector.connect(connection -> {
+        CompletableFuture.runAsync(() -> this.connector.connect(connection -> {
             this.plugin.getLogger().info("Registering database tables");
             // Create the initial tables for the plugin
             try (Statement statement = connection.createStatement()) {
                 statement.addBatch(CREATE_TABLE_GAMES);
                 statement.executeBatch();
             }
-
+        })).thenRun(() -> {
             GameRegistrationEvent registrationEvent = new GameRegistrationEvent();
-            registrationEvent.callEvent();
-        }));
+            System.out.println("Called registration event:" + registrationEvent.callEvent());
+        });
     }
 
     /**
@@ -91,7 +93,7 @@ public class DataManager implements Manager {
                     while (resultSet.next()) results.add(this.construct(resultSet));
                 }
             });
-            
+
             return results;
         });
     }
@@ -100,18 +102,36 @@ public class DataManager implements Manager {
      * Save a game instance into the plugin
      *
      * @param game The game to save
-     * @param <T>  The game
+     * @param <T>  The game type
      */
     public <T extends ArcadeGame<?>> void saveGame(T game) {
         this.async(() -> this.connector.connect(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(SAVE_GAME)) {
-                statement.setString(1, game.getIdentifier().toString());
-                statement.setString(2, game.getName());
-                statement.setString(3, game.getLocation().getWorld().getName());
-                statement.setDouble(4, game.getLocation().x());
-                statement.setDouble(5, game.getLocation().y());
-                statement.setDouble(6, game.getLocation().z());
-                statement.setString(7, game.getDirection().name());
+                statement.setString(1, game.getName());
+                statement.setString(2, game.getLocation().getWorld().key().asString());
+                statement.setDouble(3, game.getLocation().x());
+                statement.setDouble(4, game.getLocation().y());
+                statement.setDouble(5, game.getLocation().z());
+                statement.setString(6, game.getDirection().name());
+                statement.executeUpdate();
+            }
+        }));
+    }
+    
+    /**
+     * Remove a game instance from the plugin
+     *
+     * @param game The game to remove
+     * @param <T>  The game type
+     */
+    public <T extends ArcadeGame<?>> void removeGame(T game) {
+        this.async(() -> this.connector.connect(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(REMOVE_GAME)) {
+                statement.setString(1, game.getName());
+                statement.setString(2, game.getLocation().getWorld().key().asString());
+                statement.setDouble(3, game.getLocation().x());
+                statement.setDouble(4, game.getLocation().y());
+                statement.setDouble(5, game.getLocation().z());
                 statement.executeUpdate();
             }
         }));
@@ -125,15 +145,15 @@ public class DataManager implements Manager {
      * @throws SQLException Any SQL Exceptions that may occur
      */
     public GameInstance construct(@NotNull ResultSet set) throws SQLException {
-        UUID identifier = UUID.fromString(set.getString("identifier"));
         String name = set.getString("name");
+        @Subst("world:overworld")
         String world = set.getString("world");
         double x = set.getDouble("position_x");
         double y = set.getDouble("position_y");
         double z = set.getDouble("position_z");
         BlockFace direction = ArcadeUtils.getEnum(BlockFace.class, set.getString("direction"));
-        Location position = new Location(Bukkit.getWorld(world), x, y, z);
-        return new GameInstance(identifier, name, position, direction);
+        Location position = new Location(Bukkit.getWorld(Key.key(world)), x, y, z);
+        return new GameInstance(name, position, direction);
     }
 
     /**
@@ -173,7 +193,6 @@ public class DataManager implements Manager {
 
     // region SQL Queries
     private final String CREATE_TABLE_GAMES = "CREATE TABLE IF NOT EXISTS `arcadeplugin_games` (" +
-            "`identifier` VARCHAR(36) NOT NULL PRIMARY KEY," +
             "`name` VARCHAR(64) NOT NULL," +
             "`world` VARCHAR(64) NOT NULL," +
             "`position_x` DOUBLE NOT NULL," +
@@ -183,10 +202,17 @@ public class DataManager implements Manager {
             ")";
 
     private final String SAVE_GAME = "REPLACE INTO `arcadeplugin_games` " +
-            "(`identifier`, `name`, `world`, `position_x`, `position_y`, `position_z`, `direction`) " +
-            "VALUES(?, ?, ?, ?, ?, ?, ?)";
+            "(`name`, `world`, `position_x`, `position_y`, `position_z`, `direction`) " +
+            "VALUES(?, ?, ?, ?, ?, ?)";
 
 
     private final String SELECT_GAMETYPES = "SELECT * FROM `arcadeplugin_games` WHERE `name` = ?";
+
+    private final String REMOVE_GAME = "DELETE FROM `arcadeplugin_games` WHERE " +
+            "`name` = ? AND " +
+            "`world` = ? AND " +
+            "`position_x` = ? AND " +
+            "`position_y` = ? AND " +
+            "`position_z` = ?";
     // endregion
 }
