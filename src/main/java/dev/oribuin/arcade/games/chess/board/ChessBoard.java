@@ -1,0 +1,130 @@
+package dev.oribuin.arcade.games.chess.board;
+
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import dev.oribuin.arcade.games.chess.piece.ChessPiece;
+import dev.oribuin.arcade.games.chess.piece.PieceType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+public class ChessBoard {
+
+    private static final char[] LETTERS = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+
+    private final Table<Integer, Integer, ChessPiece> pieces;
+    private int size;
+
+    public ChessBoard() {
+        this.pieces = HashBasedTable.create();
+        this.size = 8; // 8x8
+    }
+
+    /**
+     * Check whether a piece at a specified position is an enemy to an existing piece
+     *
+     * @param piece    The piece to check
+     * @param position The position of the enemy
+     * @return Whether the two teams are enemies
+     */
+    public boolean isEnemy(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
+        ChessPiece existing = this.getPiece(position);
+        if (existing == null) return false;
+        return piece.getTeam() != existing.getTeam();
+    }
+
+    /**
+     * Check whether a piece is able to occupy a position on the board
+     *
+     * @param piece    The piece to check
+     * @param position Where the piece wants to go
+     * @return Whether the position is available
+     */
+    public boolean isAvailable(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
+        ChessPiece existing = this.getPiece(position);
+        if (existing == null) return true;
+        if (existing.getType() == PieceType.KING) return false;
+
+        return piece.getTeam() != existing.getTeam();
+    }
+
+    /**
+     * Move a chess piece onto the placement in the board
+     *
+     * @param piece    The piece to move
+     * @param position The position to move it to
+     */
+    public boolean move(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
+        // Check whether the position is out of bounds
+        if (!isInBounds(position)) return false;
+
+        ChessPiece existing = this.getPiece(position);
+        if (existing == null) {
+            piece.move(position);
+            return true;
+        }
+
+        // Check if the pieces are on the same team
+        if (existing.getTeam() == piece.getTeam()) return false;
+
+        // Check if the piece is a king because you cant take those 
+        if (existing.getType() == PieceType.KING) return false;
+
+        existing.remove();
+        piece.move(position);
+        return true;
+    }
+
+    /**
+     * Remove the existing piece from the board
+     *
+     * @param position The position to move
+     */
+    public void remove(@NotNull BoardPosition position) {
+        ChessPiece existing = this.getPiece(position);
+        if (existing != null) existing.remove();
+    }
+
+    /**
+     * Get a piece that is on the board
+     *
+     * @param position The piece that is on the board
+     * @return The existing piece if available
+     */
+    @Nullable
+    public ChessPiece getPiece(@NotNull BoardPosition position) {
+        if (!isInBounds(position)) return null;
+
+        return this.pieces.get(position.row(), position.column());
+    }
+
+    /**
+     * Get the character for the row
+     *
+     * @param row The row to get
+     * @return The associated char
+     */
+    public static char getRowChar(int row) {
+        return LETTERS[row - 1];
+    }
+
+    /**
+     * Check whether a position is off the grid
+     *
+     * @param slot The slot to check
+     * @return Whether the position is accepted
+     */
+    public static boolean isInBounds(int slot) {
+        return slot <= 8 && slot >= 1;
+    }
+
+    /**
+     * Check whether a position is off the grid
+     *
+     * @param slot The slot to check
+     * @return Whether the position is accepted
+     */
+    public static boolean isInBounds(@NotNull BoardPosition slot) {
+        return isInBounds(slot.row()) || isInBounds(slot.column());
+    }
+
+}
