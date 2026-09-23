@@ -169,6 +169,20 @@ public class DataManager implements Manager {
         StatWrapper wrapper = this.stats.computeIfAbsent(user, x -> new StatWrapper());
         GameStats gameStats = wrapper.stats().getOrDefault(game.getName(), new GameStats());
         consumer.accept(gameStats);
+        this.writeStat(user, game.getName(), gameStats);
+    }
+    
+    /**
+     * Update a user's current stats with a consumer
+     *
+     * @param user     The user to update
+     * @param game     The game to update the stats for
+     * @param consumer The functionality to apply to the stat
+     */
+    public void updateStat(@NotNull UUID user, @NotNull String game, @NotNull Consumer<GameStats> consumer) {
+        StatWrapper wrapper = this.stats.computeIfAbsent(user, x -> new StatWrapper());
+        GameStats gameStats = wrapper.stats().getOrDefault(game, new GameStats());
+        consumer.accept(gameStats);
         this.writeStat(user, game, gameStats);
     }
 
@@ -178,11 +192,10 @@ public class DataManager implements Manager {
      * @param user  The user to update
      * @param game  The game with the associated stats
      * @param stats The stats to write
-     * @param <T>   The type of game
      */
-    public <T extends ArcadeGame<?>> void writeStat(@NotNull UUID user, @NotNull T game, @NotNull GameStats stats) {
+    public void writeStat(@NotNull UUID user, @NotNull String game, @NotNull GameStats stats) {
         StatWrapper wrapper = this.stats.computeIfAbsent(user, x -> new StatWrapper());
-        wrapper.stats().put(game.getName(), stats);
+        wrapper.stats().put(game, stats);
         this.stats.put(user, wrapper);
 
         this.async(() -> this.connector.connect(connection -> {

@@ -7,6 +7,7 @@ import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
@@ -33,6 +34,31 @@ public class AdminCommand {
 
     public AdminCommand(ArcadePlugin plugin) {
         this.plugin = plugin;
+    }
+
+
+    @Command("arcade admin stat reset <player> <game>")
+    @Permission("arcade.admin")
+    @CommandDescription("Reset's a users arcade stats for a specified game")
+    public void resetStat(
+            @NotNull CommandSender sender,
+            @Argument("player") OfflinePlayer player,
+            @Argument(value = "game", suggestions = "games") String game
+    ) {
+        List<String> targets = new ArrayList<>(List.of(game));
+        if (game.equalsIgnoreCase("*")) {
+            targets = new ArrayList<>(GameRegistry.get().getRegistry().keySet());
+        }
+
+        for (String target : targets) {
+            this.plugin.getDataManager().updateStat(player.getUniqueId(), target, x -> {
+                x.setWins(0);
+                x.setPlays(0);
+                x.setLosses(0);
+            });
+        }
+
+        sender.sendMessage("You have reset " + player.getName() + "'s Game Stats for [" + String.join(", ", targets) + "]");
     }
 
     /**
