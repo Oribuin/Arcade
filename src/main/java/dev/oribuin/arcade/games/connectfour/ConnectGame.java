@@ -8,8 +8,10 @@ import dev.oribuin.arcade.config.Messages;
 import dev.oribuin.arcade.games.connectfour.participant.ConnectPlayer;
 import dev.oribuin.arcade.games.connectfour.token.ConnectToken;
 import dev.oribuin.arcade.games.connectfour.token.TokenColour;
+import dev.oribuin.arcade.manager.DataManager;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.task.ScheduledTask;
+import dev.oribuin.arcade.statistic.GameStats;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import dev.oribuin.arcade.util.Placeholders;
 import net.kyori.adventure.text.Component;
@@ -381,18 +383,27 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
                 this.active = false;
                 this.applyUniversalGlow(participant.getTokenColour()); // User won so the whole game should light up
 
-                String losers = this.participants.values().stream()
+                List<ConnectPlayer> losers = this.participants.values().stream()
                         .filter(x -> x.getUniqueId() != player.getUniqueId())
+                        .collect(Collectors.toList());
+
+                String loserNames = losers.stream()
                         .map(x -> x.getPlayer().getName())
                         .collect(Collectors.joining(", "));
 
-                if (losers.isEmpty()) losers = "N/A";
+                if (losers.isEmpty()) loserNames = "N/A";
 
                 Messages.get().getPlayerWon().send(this,
                         "game", ArcadeUtils.niceify(this.name),
                         "winner", player.getName(),
-                        "losers", losers
+                        "losers", loserNames
                 );
+
+                DataManager manager = ArcadePlugin.getInstance().getDataManager();
+                // Update the winner and loser's stats
+                manager.updateStat(player.getUniqueId(), this, GameStats::addWin);
+                losers.forEach(x -> manager.updateStat(x.getUniqueId(), this, GameStats::addLoss));
+                
                 PluginScheduler.get().runTaskAtLocationLater(this.location, () -> this.stop(false), 3 * 60);
                 return;
             }
