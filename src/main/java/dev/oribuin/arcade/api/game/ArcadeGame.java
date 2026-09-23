@@ -4,6 +4,7 @@ import dev.oribuin.arcade.ArcadePlugin;
 import dev.oribuin.arcade.api.event.EventHandler;
 import dev.oribuin.arcade.api.participant.Participant;
 import dev.oribuin.arcade.config.Messages;
+import dev.oribuin.arcade.statistic.GameStats;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.audience.ForwardingAudience;
@@ -151,7 +152,7 @@ public abstract class ArcadeGame<T extends Participant> extends EventHandler imp
      * @return The resulting participant
      */
     public abstract Supplier<T> createParticipant(Player target);
-
+    
     /**
      * Gets the audience.
      *

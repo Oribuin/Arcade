@@ -7,6 +7,7 @@ import dev.oribuin.arcade.config.DatabaseSettings;
 import dev.oribuin.arcade.config.Messages;
 import dev.oribuin.arcade.config.loader.ConfigLoader;
 import dev.oribuin.arcade.games.connectfour.ConnectGame;
+import dev.oribuin.arcade.hook.PAPIProvider;
 import dev.oribuin.arcade.listener.GameListener;
 import dev.oribuin.arcade.manager.CommandManager;
 import dev.oribuin.arcade.manager.DataManager;
@@ -40,6 +41,11 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
         PluginManager pluginManager = this.getServer().getPluginManager();
         pluginManager.registerEvents(this, this);
         pluginManager.registerEvents(new GameListener(this), this);
+
+        // Register plugin hooks
+        if (pluginManager.isPluginEnabled("PlaceholderAPI")) {
+            new PAPIProvider(this).register();
+        }
 
         // Load the plugin managers
         this.commandManager = new CommandManager(this);

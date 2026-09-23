@@ -3,6 +3,7 @@ package dev.oribuin.arcade.listener;
 import dev.oribuin.arcade.ArcadePlugin;
 import dev.oribuin.arcade.api.GameRegistry;
 import dev.oribuin.arcade.api.game.ArcadeGame;
+import dev.oribuin.arcade.manager.DataManager;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -10,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -50,6 +52,20 @@ public class GameListener implements Listener {
     }
 
     /**
+     * Handle the listener for when the player has logged on for stat loading
+     *
+     * @param event The player login event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        DataManager manager = this.plugin.getDataManager();
+        manager.loadStats(player.getUniqueId()).thenAccept(
+                x -> manager.getStats().put(player.getUniqueId(), x)
+        );
+    }
+
+    /**
      * Handle a listener check for whether the player has ragequit from the game
      *
      * @param event The player quit event
@@ -57,6 +73,9 @@ public class GameListener implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
+        this.plugin.getDataManager().getStats().remove(player.getUniqueId());
+
         ArcadeGame<?> game = GameRegistry.getParticipating(player.getUniqueId());
         if (game == null || game.getLocation() == null) return;
 

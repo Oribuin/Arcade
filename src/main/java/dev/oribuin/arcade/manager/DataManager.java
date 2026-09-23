@@ -1,6 +1,8 @@
 package dev.oribuin.arcade.manager;
 
+import com.google.gson.Gson;
 import dev.oribuin.arcade.ArcadePlugin;
+import dev.oribuin.arcade.api.GameRegistry;
 import dev.oribuin.arcade.api.event.GameRegistrationEvent;
 import dev.oribuin.arcade.api.game.ArcadeGame;
 import dev.oribuin.arcade.api.game.GameInstance;
@@ -9,6 +11,8 @@ import dev.oribuin.arcade.database.connector.DatabaseConnector;
 import dev.oribuin.arcade.database.connector.MySQLConnector;
 import dev.oribuin.arcade.database.connector.SQLiteConnector;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
+import dev.oribuin.arcade.statistic.GameStats;
+import dev.oribuin.arcade.statistic.StatWrapper;
 import dev.oribuin.arcade.util.ArcadeUtils;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
@@ -17,22 +21,31 @@ import org.bukkit.block.BlockFace;
 import org.intellij.lang.annotations.Subst;
 import org.jetbrains.annotations.NotNull;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class DataManager implements Manager {
 
+    private static final Gson GSON = new Gson();
+
     private final ArcadePlugin plugin;
+    private final Map<UUID, StatWrapper> stats;
     private DatabaseConnector connector;
 
     public DataManager(@NotNull ArcadePlugin plugin) {
         this.plugin = plugin;
+        this.stats = new HashMap<>();
     }
 
     /**
@@ -67,11 +80,17 @@ public class DataManager implements Manager {
             // Create the initial tables for the plugin
             try (Statement statement = connection.createStatement()) {
                 statement.addBatch(CREATE_TABLE_GAMES);
+                statement.addBatch(CREATE_TABLE_STATS);
                 statement.executeBatch();
             }
-        })).thenRun(() -> {
-            GameRegistrationEvent registrationEvent = new GameRegistrationEvent();
-            System.out.println("Called registration event:" + registrationEvent.callEvent());
+            
+            // Loads all the games within the plugin
+        })).thenRun(() -> new GameRegistrationEvent().callEvent()).thenRunAsync(() -> {
+            // Loads the user's stats in the plugin that are currently online
+            Bukkit.getOnlinePlayers().forEach(player -> {
+                StatWrapper wrapper = this.loadStatsUnsafe(player.getUniqueId());
+                this.stats.put(player.getUniqueId(), wrapper);
+            });
         });
     }
 
@@ -117,6 +136,7 @@ public class DataManager implements Manager {
         }));
     }
 
+
     /**
      * Remove a game instance from the plugin
      *
@@ -133,7 +153,115 @@ public class DataManager implements Manager {
                 statement.setDouble(5, game.getLocation().z());
                 statement.executeUpdate();
             }
+
         }));
+    }
+
+    /**
+     * Update a user's current stats with a consumer
+     *
+     * @param user     The user to update
+     * @param game     The game to update the stats for
+     * @param consumer The functionality to apply to the stat
+     * @param <T>      The type of game being updated
+     */
+    public <T extends ArcadeGame<?>> void updateStat(@NotNull UUID user, @NotNull T game, @NotNull Consumer<GameStats> consumer) {
+        StatWrapper wrapper = this.stats.computeIfAbsent(user, x -> new StatWrapper());
+        GameStats gameStats = wrapper.stats().getOrDefault(game.getName(), new GameStats());
+        consumer.accept(gameStats);
+        this.writeStat(user, game, gameStats);
+    }
+
+    /**
+     * Write  user's stats into the database & cache
+     *
+     * @param user  The user to update
+     * @param game  The game with the associated stats
+     * @param stats The stats to write
+     * @param <T>   The type of game
+     */
+    public <T extends ArcadeGame<?>> void writeStat(@NotNull UUID user, @NotNull T game, @NotNull GameStats stats) {
+        StatWrapper wrapper = this.stats.computeIfAbsent(user, x -> new StatWrapper());
+        wrapper.stats().put(game.getName(), stats);
+        this.stats.put(user, wrapper);
+
+        this.async(() -> this.connector.connect(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(SAVE_STATS)) {
+                statement.setString(1, user.toString());
+                statement.setString(2, GSON.toJson(wrapper));
+                statement.executeUpdate();
+            }
+        }));
+    }
+
+    /**
+     * Load a user's stats on for each game
+     *
+     * @param user The user to load
+     * @return The user's stats to load
+     */
+    private StatWrapper loadStatsUnsafe(@NotNull UUID user) {
+        try (Connection connection = this.connector.connect();
+             PreparedStatement statement = connection.prepareStatement(SELECT_USER_STATS)
+        ) {
+            statement.setString(1, user.toString());
+            ResultSet set = statement.executeQuery();
+            if (set.next()) {
+                return GSON.fromJson(set.getString("stats"), StatWrapper.class);
+            }
+        } catch (SQLException ex) {
+            this.plugin.getLogger().severe("An error occurred executing an SQLite query: " + ex.getMessage());
+        }
+
+        return new StatWrapper();
+    }
+
+    /**
+     * Load a user's stats on for each game
+     *
+     * @param user The user to load
+     * @return The user's stats to load
+     */
+    public CompletableFuture<StatWrapper> loadStats(UUID user) {
+        return CompletableFuture.supplyAsync(() -> loadStatsUnsafe(user));
+    }
+
+    /**
+     * Get the combined statistics of all the player's stuff
+     *
+     * @param user The user to get the stats for 
+     * @return The resulting game stats
+     */
+    @NotNull
+    public GameStats getCombined(@NotNull UUID user) {
+        StatWrapper wrapper = this.stats.computeIfAbsent(user, x -> new StatWrapper());
+        GameStats gameStats = new GameStats();
+
+        GameRegistry.get().getRegistry().keySet().forEach(s -> wrapper.stats().values().forEach(x -> {
+            gameStats.setWins(gameStats.getWins() + x.getWins());
+            gameStats.setLosses(gameStats.getLosses() + x.getLosses());
+            gameStats.setPlays(gameStats.getPlays() + x.getPlays());
+        }));
+
+        return gameStats;
+    }
+
+    @NotNull
+    public GameStats getStats(@NotNull UUID user, @NotNull String game) {
+
+        // Get the combined stats if the game is combined
+        if (game.equalsIgnoreCase("combined")) return this.getCombined(user);
+
+        StatWrapper wrapper = this.stats.computeIfAbsent(user, x -> new StatWrapper());
+        GameStats gameStats = wrapper.stats().get(game);
+
+        // User's stats are already cached
+        if (gameStats != null) return gameStats;
+
+        // load the user's stats
+        this.loadStats(user).thenAccept(x -> this.stats.put(user, x));
+
+        return new GameStats();
     }
 
     /**
@@ -190,6 +318,10 @@ public class DataManager implements Manager {
         PluginScheduler.get().runTaskAsync(runnable);
     }
 
+    public Map<UUID, StatWrapper> getStats() {
+        return stats;
+    }
+
     // region SQL Queries
     private final String CREATE_TABLE_GAMES = "CREATE TABLE IF NOT EXISTS `arcadeplugin_games` (" +
             "`name` VARCHAR(64) NOT NULL," +
@@ -200,10 +332,19 @@ public class DataManager implements Manager {
             "`direction` VARCHAR(64) NOT NULL" +
             ")";
 
+    private final String CREATE_TABLE_STATS = "CREATE TABLE IF NOT EXISTS `arcadeplugin_stats` (" +
+            "`player` VARCHAR(36) NOT NULL PRIMARY KEY, " +
+            "`stats` VARCHAR(2048) NOT NULL" +
+            ")";
+
     private final String SAVE_GAME = "REPLACE INTO `arcadeplugin_games` " +
             "(`name`, `world`, `position_x`, `position_y`, `position_z`, `direction`) " +
             "VALUES(?, ?, ?, ?, ?, ?)";
 
+    private final String SAVE_STATS = "REPLACE INTO `arcadeplugin_stats` " +
+            "(`player`, `stats`) VALUES (?, ?)";
+
+    private final String SELECT_USER_STATS = "SELECT `stats` FROM `arcadeplugin_stats` WHERE `player` = ?";
 
     private final String SELECT_GAMETYPES = "SELECT * FROM `arcadeplugin_games` WHERE `name` = ?";
 
