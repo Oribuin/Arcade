@@ -3,12 +3,15 @@ package dev.oribuin.arcade.games.chess.piece.impl;
 import dev.oribuin.arcade.games.chess.board.BoardPosition;
 import dev.oribuin.arcade.games.chess.board.ChessBoard;
 import dev.oribuin.arcade.games.chess.piece.ChessPiece;
+import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
 
 /**
  * Represents a piece that will exist on the board for a player to move
@@ -38,59 +41,32 @@ public class RookPiece extends ChessPiece {
         List<BoardPosition> result = new ArrayList<>();
         int distance = 8;
 
-        // region Check left positions
-        for (int i = distance; i <= distance; i++) {
-            BoardPosition available = new BoardPosition(
-                    this.position.row(),
-                    this.position.column() - i
-            );
+        // up & down
+        for (int i = -distance; i <= distance; i++) {
+            BoardPosition pos = new BoardPosition(this.position.row(), this.position.column() + i);
+            if (pos.row() == this.position.row() && pos.column() == this.position.column()) continue;
 
-            if (!ChessBoard.isInBounds(available)) break;
-            ChessPiece existing = board.getPiece(available);
-            result.add(available);
-            if (existing != null) break;
+            MoveCheckResult checkResult = board.checkPosition(this, pos);
+            if (!checkResult.isTakeable()) break; // Check whether the position is takeable
+
+            // Add the position and cancel search if enemy found
+            result.add(pos);
+            if (checkResult == ENEMY) break;
         }
-        // endregion
-        // region Check right positions
-        for (int i = distance; i <= distance; i++) {
-            BoardPosition available = new BoardPosition(
-                    this.position.row(),
-                    this.position.column() + i
-            );
+        
+        // left & right
+        for (int i = -distance; i <= distance; i++) {
+            BoardPosition pos = new BoardPosition(this.position.row() + i, this.position.column());
+            if (pos.row() == this.position.row() && pos.column() == this.position.column()) continue;
 
-            if (!ChessBoard.isInBounds(available)) break;
-            ChessPiece existing = board.getPiece(available);
-            result.add(available);
-            if (existing != null) break;
+            MoveCheckResult checkResult = board.checkPosition(this, pos);
+            if (!checkResult.isTakeable()) break; // Check whether the position is takeable
+
+            // Add the position and cancel search if enemy found
+            result.add(pos);
+            if (checkResult == ENEMY) break;
         }
-        // endregion
-        // region Check down positions
-        for (int i = distance; i <= distance; i++) {
-            BoardPosition available = new BoardPosition(
-                    this.position.row() - i,
-                    this.position.column()
-            );
-
-            if (!ChessBoard.isInBounds(available)) break;
-            ChessPiece existing = board.getPiece(available);
-            result.add(available);
-            if (existing != null) break;
-        }
-        // endregion
-        // region Check up positions
-        for (int i = distance; i <= distance; i++) {
-            BoardPosition available = new BoardPosition(
-                    this.position.row() + 1,
-                    this.position.column()
-            );
-
-            if (!ChessBoard.isInBounds(available)) break;
-            ChessPiece existing = board.getPiece(available);
-            result.add(available);
-            if (existing != null) break;
-        }
-        // endregion
-
+        
         return result;
     }
 

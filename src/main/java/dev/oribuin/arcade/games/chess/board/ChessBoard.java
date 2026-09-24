@@ -3,9 +3,16 @@ package dev.oribuin.arcade.games.chess.board;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import dev.oribuin.arcade.games.chess.piece.ChessPiece;
+import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ALLY;
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.AVAILABLE_SPACE;
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.KING;
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.OUT_OF_BOUNDS;
 
 public class ChessBoard {
 
@@ -39,12 +46,26 @@ public class ChessBoard {
      * @param position Where the piece wants to go
      * @return Whether the position is available
      */
-    public boolean isAvailable(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
-        ChessPiece existing = this.getPiece(position);
-        if (existing == null) return true;
-        if (existing.getType() == PieceType.KING) return false;
+    public MoveCheckResult checkPosition(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
+        if (!ChessBoard.isInBounds(position)) return OUT_OF_BOUNDS; // not in bounds so its not available
 
-        return piece.getTeam() != existing.getTeam();
+        ChessPiece existing = this.getPiece(position);
+        if (existing == null) return AVAILABLE_SPACE;
+        if (existing.getType() == PieceType.KING) return KING;
+
+        return piece.getTeam() == existing.getTeam() ? ALLY : ENEMY;
+    }
+
+    /**
+     * Check whether a piece is able to occupy a position on the board
+     *
+     * @param piece    The piece to check
+     * @param position Where the piece wants to go
+     * @return Whether the position is available
+     */
+    public boolean isAvailable(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
+        MoveCheckResult result = this.checkPosition(piece, position);
+        return result == AVAILABLE_SPACE || result == ENEMY;
     }
 
     /**
