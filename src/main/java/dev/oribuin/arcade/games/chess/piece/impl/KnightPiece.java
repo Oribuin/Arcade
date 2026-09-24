@@ -41,7 +41,7 @@ public class KnightPiece extends ChessPiece {
 
         // region Forward Left & Right
         BoardPosition forwardLeft = new BoardPosition(
-                this.position.row() + -column,
+                this.position.row() - column,
                 this.position.column() + row
         );
 
@@ -56,7 +56,7 @@ public class KnightPiece extends ChessPiece {
 
         // region Backward Left & Right
         BoardPosition backwardLeft = new BoardPosition(
-                this.position.row() + -column,
+                this.position.row() - column,
                 this.position.column() - row
         );
 
@@ -83,7 +83,7 @@ public class KnightPiece extends ChessPiece {
         if (board.isAvailable(this, leftUp)) result.add(leftUp);
         if (board.isAvailable(this, leftDown)) result.add(leftDown);
         // endregion        
-        
+
         // region Right Up & Down
         BoardPosition rightUp = new BoardPosition(
                 this.position.row() + row,
@@ -98,7 +98,7 @@ public class KnightPiece extends ChessPiece {
         if (board.isAvailable(this, rightUp)) result.add(rightUp);
         if (board.isAvailable(this, rightDown)) result.add(rightDown);
         // endregion
-        
+
         return result;
     }
 

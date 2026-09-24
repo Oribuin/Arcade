@@ -72,7 +72,7 @@ public class BishopPiece extends ChessPiece {
             if (checkResult == ENEMY) break;
         }
         // endregion
-        
+
         // region Bottom Right
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(

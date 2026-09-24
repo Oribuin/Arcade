@@ -73,16 +73,16 @@ public class PawnPiece extends ChessPiece {
                 this.position.row() - 1,
                 this.position.column() + moveDistance
         );
-        
+
         BoardPosition rightPos = new BoardPosition(
                 this.position.row() + 1,
                 this.position.column() + moveDistance
         );
-        
+
         if (board.isAvailable(this, leftPos)) result.add(leftPos);
         if (board.isAvailable(this, rightPos)) result.add(rightPos);
         // endregion
- 
+
         return result;
     }
 

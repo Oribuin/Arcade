@@ -53,7 +53,7 @@ public class RookPiece extends ChessPiece {
             result.add(pos);
             if (checkResult == ENEMY) break;
         }
-        
+
         // left & right
         for (int i = -distance; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(this.position.row() + i, this.position.column());
@@ -66,7 +66,7 @@ public class RookPiece extends ChessPiece {
             result.add(pos);
             if (checkResult == ENEMY) break;
         }
-        
+
         return result;
     }
 

@@ -4,6 +4,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import dev.oribuin.arcade.games.chess.piece.ChessPiece;
 import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
+import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,19 +12,65 @@ import org.jetbrains.annotations.Nullable;
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ALLY;
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.AVAILABLE_SPACE;
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
-import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.KING;
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.IMMUNE;
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.OUT_OF_BOUNDS;
+import static dev.oribuin.arcade.games.chess.piece.PieceType.BISHOP;
+import static dev.oribuin.arcade.games.chess.piece.PieceType.KING;
+import static dev.oribuin.arcade.games.chess.piece.PieceType.KNIGHT;
+import static dev.oribuin.arcade.games.chess.piece.PieceType.PAWN;
+import static dev.oribuin.arcade.games.chess.piece.PieceType.QUEEN;
+import static dev.oribuin.arcade.games.chess.piece.PieceType.ROOK;
 
 public class ChessBoard {
 
     private static final char[] LETTERS = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 
     private final Table<Integer, Integer, ChessPiece> pieces;
-    private int size;
+    private final int size;
 
     public ChessBoard() {
         this.pieces = HashBasedTable.create();
         this.size = 8; // 8x8
+
+        // Set the pawn pieces into the board
+        for (int slot = 1; slot < size; slot++) {
+            this.place(PAWN, PieceTeam.WHITE, new BoardPosition(slot, 2));
+            this.place(PAWN, PieceTeam.WHITE, new BoardPosition(slot, 7));
+        }
+
+        // Set the rook pieces
+        this.place(ROOK, PieceTeam.WHITE, new BoardPosition(1, 1));
+        this.place(ROOK, PieceTeam.WHITE, new BoardPosition(1, 8));
+        this.place(ROOK, PieceTeam.BLACK, new BoardPosition(8, 1));
+        this.place(ROOK, PieceTeam.BLACK, new BoardPosition(8, 8));
+
+        // Set the knight pieces
+        this.place(KNIGHT, PieceTeam.WHITE, new BoardPosition(1, 2));
+        this.place(KNIGHT, PieceTeam.WHITE, new BoardPosition(1, 7));
+        this.place(KNIGHT, PieceTeam.BLACK, new BoardPosition(8, 2));
+        this.place(KNIGHT, PieceTeam.BLACK, new BoardPosition(8, 7));
+
+        // Set the bishop pieces 
+        this.place(BISHOP, PieceTeam.WHITE, new BoardPosition(1, 3));
+        this.place(BISHOP, PieceTeam.WHITE, new BoardPosition(1, 6));
+        this.place(BISHOP, PieceTeam.BLACK, new BoardPosition(8, 3));
+        this.place(BISHOP, PieceTeam.BLACK, new BoardPosition(8, 6));
+
+        // Set the king & queens pieces 
+        this.place(QUEEN, PieceTeam.WHITE, new BoardPosition(1, 4));
+        this.place(QUEEN, PieceTeam.BLACK, new BoardPosition(8, 4));
+        this.place(KING, PieceTeam.WHITE, new BoardPosition(1, 4));
+        this.place(KING, PieceTeam.BLACK, new BoardPosition(8, 4));
+    }
+
+    /**
+     * Create a new piece and place it on the board 
+     * @param type The type of piece to place
+     * @param team The team the piece is on
+     * @param pos Where the piece is locating
+     */
+    private void place(@NotNull PieceType type, @NotNull PieceTeam team, @NotNull BoardPosition pos) {
+        this.pieces.put(pos.row(), pos.column(), type.createPiece(team, pos));
     }
 
     /**
@@ -51,7 +98,7 @@ public class ChessBoard {
 
         ChessPiece existing = this.getPiece(position);
         if (existing == null) return AVAILABLE_SPACE;
-        if (existing.getType() == PieceType.KING) return KING;
+        if (existing.getType() == KING) return IMMUNE;
 
         return piece.getTeam() == existing.getTeam() ? ALLY : ENEMY;
     }
@@ -88,7 +135,7 @@ public class ChessBoard {
         if (existing.getTeam() == piece.getTeam()) return false;
 
         // Check if the piece is a king because you cant take those 
-        if (existing.getType() == PieceType.KING) return false;
+        if (existing.getType() == KING) return false;
 
         existing.remove();
         piece.move(position);
