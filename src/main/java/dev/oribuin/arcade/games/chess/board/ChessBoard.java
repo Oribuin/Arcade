@@ -21,21 +21,25 @@ import static dev.oribuin.arcade.games.chess.piece.PieceType.PAWN;
 import static dev.oribuin.arcade.games.chess.piece.PieceType.QUEEN;
 import static dev.oribuin.arcade.games.chess.piece.PieceType.ROOK;
 
+/**
+ * Handles all logic regarding the actual game of chess, Placing pieces and moving pieces
+ */
 public class ChessBoard {
 
     private static final char[] LETTERS = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 
     private final Table<Integer, Integer, ChessPiece> pieces;
-    private final int size;
 
+    /**
+     * Creates a new chess board for the plugin 
+     */
     public ChessBoard() {
         this.pieces = HashBasedTable.create();
-        this.size = 8; // 8x8
 
         // Set the pawn pieces into the board
-        for (int slot = 1; slot < size; slot++) {
-            this.place(PAWN, PieceTeam.WHITE, new BoardPosition(slot, 2));
-            this.place(PAWN, PieceTeam.WHITE, new BoardPosition(slot, 7));
+        for (int slot = 1; slot <= 8; slot++) {
+            this.place(PAWN, PieceTeam.WHITE, new BoardPosition(2, slot));
+            this.place(PAWN, PieceTeam.BLACK, new BoardPosition(7, slot));
         }
 
         // Set the rook pieces
@@ -59,12 +63,13 @@ public class ChessBoard {
         // Set the king & queens pieces 
         this.place(QUEEN, PieceTeam.WHITE, new BoardPosition(1, 4));
         this.place(QUEEN, PieceTeam.BLACK, new BoardPosition(8, 4));
-        this.place(KING, PieceTeam.WHITE, new BoardPosition(1, 4));
-        this.place(KING, PieceTeam.BLACK, new BoardPosition(8, 4));
+        this.place(KING, PieceTeam.WHITE, new BoardPosition(1, 5));
+        this.place(KING, PieceTeam.BLACK, new BoardPosition(8, 5));
     }
 
     /**
      * Create a new piece and place it on the board 
+     *
      * @param type The type of piece to place
      * @param team The team the piece is on
      * @param pos Where the piece is locating
@@ -195,4 +200,7 @@ public class ChessBoard {
         return isInBounds(slot.row()) || isInBounds(slot.column());
     }
 
+    public Table<Integer, Integer, ChessPiece> getPieces() {
+        return pieces;
+    }
 }

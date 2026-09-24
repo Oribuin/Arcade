@@ -5,10 +5,13 @@ import dev.oribuin.arcade.games.chess.board.ChessBoard;
 import dev.oribuin.arcade.games.chess.piece.ChessPiece;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Represents a piece that will exist on the board for a player to move
@@ -16,6 +19,9 @@ import java.util.List;
  * This piece can only move forward once and only attack diagonally.
  */
 public class PawnPiece extends ChessPiece {
+
+    private static final @NotNull ItemStack WHITE = createSkullData("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWExNmZmNjBmZmZmMWI5MjJlZDE1NDdhY2E0NDFmYTNjMTQ4Y2M3ZTZjMzcyMTY2MWM5MGVhMWMxMDFmYTg0MSJ9fX0=");
+    private static final @NotNull ItemStack BLACK = createSkullData("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMGI2YjAxOTc4YTYzMTgzZmMyZDhhM2MzMTRlNjc3Njg5YWVkZTA4M2VhMzNjMzVkMjcxODdmOTcxODI5MTUifX19");
 
     private boolean hasMoved;
 
@@ -30,6 +36,16 @@ public class PawnPiece extends ChessPiece {
         this.hasMoved = false;
     }
 
+    /**
+     * Apply a function to the display entity on the board
+     *
+     * @return The function to apply
+     */
+    @Override
+    public Consumer<ItemDisplay> apply() {
+        return x -> x.setItemStack(team == PieceTeam.WHITE ? WHITE : BLACK);
+    }
+    
     /**
      * Move the chess piece to the new position
      *

@@ -6,6 +6,7 @@ import dev.oribuin.arcade.api.game.ArcadeGame;
 import dev.oribuin.arcade.config.DatabaseSettings;
 import dev.oribuin.arcade.config.Messages;
 import dev.oribuin.arcade.config.loader.ConfigLoader;
+import dev.oribuin.arcade.games.chess.ChessGame;
 import dev.oribuin.arcade.games.connectfour.ConnectGame;
 import dev.oribuin.arcade.hook.PAPIProvider;
 import dev.oribuin.arcade.listener.GameListener;
@@ -65,7 +66,7 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onRegister(GameRegistrationEvent event) {
-        System.out.println("Register game event called");
+        event.register("chess", ChessGame::new);
         event.register("connect_four", ConnectGame::new);
     }
 

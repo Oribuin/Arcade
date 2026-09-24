@@ -6,10 +6,16 @@ import dev.oribuin.arcade.games.chess.piece.ChessPiece;
 import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
+import org.bukkit.block.Skull;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
 
@@ -19,7 +25,10 @@ import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
  * This piece can only move forward once and only attack diagonally.
  */
 public class BishopPiece extends ChessPiece {
-
+    
+    private static final @NotNull ItemStack WHITE = createSkullData("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWU1NDFjYzhiZjE3ODM4ZGNmZWZiNTJhOGIyNzFkZjAyMDFkMTkyYmQ4ZGIyZjk0Y2Y4YzNkZWUxYmU3NjIifX19");
+    private static final @NotNull ItemStack BLACK = createSkullData("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOWNiY2UxMmVhN2UyMjFkOWVjZDkxMzUzYjVhOTIxNWFmM2ZiNTM1NzBmN2JmM2VjNDc0YTc2NzVhMTRmZDIifX19");
+    
     /**
      * Create a new chess piece to be placed on the board
      *
@@ -30,6 +39,16 @@ public class BishopPiece extends ChessPiece {
         super(PieceType.BISHOP, team, position);
     }
 
+    /**
+     * Apply a function to the display entity on the board
+     *
+     * @return The function to apply
+     */
+    @Override
+    public Consumer<ItemDisplay> apply() {
+        return x -> x.setItemStack(team == PieceTeam.WHITE ? WHITE : BLACK);
+    }
+    
     /**
      * Gets the available positions the piece can move to
      *

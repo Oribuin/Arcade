@@ -6,10 +6,13 @@ import dev.oribuin.arcade.games.chess.piece.ChessPiece;
 import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
 
@@ -20,6 +23,9 @@ import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
  */
 public class RookPiece extends ChessPiece {
 
+    private static final @NotNull ItemStack WHITE = createSkullData("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODBlZDQ4MWQxYjhkODNmNDcyNzMxZTNmYzNjOWI5NTFhMWVjNWU5ZDUzOTU1NDNkNThlMWRmNWEyZTNmM2QifX19");
+    private static final @NotNull ItemStack BLACK = createSkullData("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZmJkOTU0YjM2Y2JjY2I0YzU4NzM2YjEzY2Q5MWM4ODM2NzhmNDYxNjQ0ZDBmYzJkNWZiMmYzMThiZmJmN2NkIn19fQ==");
+
     /**
      * Create a new chess piece to be placed on the board
      *
@@ -28,6 +34,16 @@ public class RookPiece extends ChessPiece {
      */
     public RookPiece(PieceTeam team, BoardPosition position) {
         super(PieceType.ROOK, team, position);
+    }
+
+    /**
+     * Apply a function to the display entity on the board
+     *
+     * @return The function to apply
+     */
+    @Override
+    public Consumer<ItemDisplay> apply() {
+        return x -> x.setItemStack(team == PieceTeam.WHITE ? WHITE : BLACK);
     }
 
     /**

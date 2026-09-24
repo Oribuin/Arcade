@@ -17,5 +17,5 @@ package dev.oribuin.arcade.games.chess.piece;
  * <a href="https://theconversation.com/why-does-white-always-go-first-in-chess-141962">The Conversation</a>
  */
 public enum PieceTeam {
-    BLACK, WHITE
+    WHITE, BLACK
 }

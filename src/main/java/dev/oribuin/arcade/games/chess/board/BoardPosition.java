@@ -1,5 +1,6 @@
 package dev.oribuin.arcade.games.chess.board;
 
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
@@ -10,7 +11,7 @@ import org.jspecify.annotations.NonNull;
  * @param column The row the column is on, this is typically 1-8
  */
 public record BoardPosition(int row, int column) {
-
+    
     /**
      * Check whether a position is occupied already on the board
      *
