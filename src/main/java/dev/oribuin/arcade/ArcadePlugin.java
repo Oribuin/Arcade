@@ -11,6 +11,11 @@ import dev.oribuin.arcade.hook.PAPIProvider;
 import dev.oribuin.arcade.listener.GameListener;
 import dev.oribuin.arcade.manager.CommandManager;
 import dev.oribuin.arcade.manager.DataManager;
+import dev.oribuin.arcade.scheduler.PluginScheduler;
+import dev.oribuin.arcade.scheduler.wrapper.SchedulerWrapper;
+import dev.oribuin.arcade.util.NMSUtil;
+import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -67,7 +72,8 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         for (ArcadeGame<?> game : new ArrayList<>(GameRegistry.get().getInstances().values())) {
-            game.unload();
+            if (NMSUtil.isFolia()) PluginScheduler.get().runTaskAtLocation(game.getLocation(), game::unload);
+            else game.unload();
         }
 
         GameRegistry.get().getInstances().clear();

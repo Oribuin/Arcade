@@ -4,6 +4,7 @@ import dev.oribuin.arcade.ArcadePlugin;
 import dev.oribuin.arcade.api.GameRegistry;
 import dev.oribuin.arcade.api.game.ArcadeGame;
 import dev.oribuin.arcade.manager.DataManager;
+import dev.oribuin.arcade.scheduler.PluginScheduler;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -126,7 +127,8 @@ public class GameListener implements Listener {
         if (game == null || game.getLocation() == null) return;
 
         // Check if the player is 15 or more blocks away
-        if (destination.distance(game.getLocation()) > 10) {
+        boolean isSameWorld = destination.getWorld().key().equals(game.getLocation().getWorld().key());
+        if (!isSameWorld || destination.distance(game.getLocation()) >= 10) {
             game.leave(player, game.isActive()); // Handle the leaving of the game
         } else {
             if (game.isActive()) game.handleEvent(event); // Handle move event for the player
