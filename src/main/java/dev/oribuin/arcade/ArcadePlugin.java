@@ -31,10 +31,13 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
     private ConfigLoader configLoader;
     private CommandManager commandManager;
     private DataManager dataManager;
+    private boolean shuttingDown = false;
 
     @Override
     public void onEnable() {
         instance = this;
+        
+        this.shuttingDown = false;
 
         // Load the plugin configs
         this.configLoader = new ConfigLoader();
@@ -73,7 +76,7 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         for (ArcadeGame<?> game : new ArrayList<>(GameRegistry.get().getInstances().values())) {
-            if (NMSUtil.isFolia()) PluginScheduler.get().runTaskAtLocation(game.getLocation(), game::unload);
+            if (NMSUtil.isFolia()) Bukkit.getRegionScheduler().execute(this, game.getLocation(), game::unload);
             else game.unload();
         }
 
