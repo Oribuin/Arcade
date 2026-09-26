@@ -65,14 +65,13 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onRegister(GameRegistrationEvent event) {
-        System.out.println("Register game event called");
         event.register("connect_four", ConnectGame::new);
     }
 
     @Override
     public void onDisable() {
         for (ArcadeGame<?> game : new ArrayList<>(GameRegistry.get().getInstances().values())) {
-            if (NMSUtil.isFolia()) PluginScheduler.get().runTaskAtLocation(game.getLocation(), game::unload);
+            if (NMSUtil.isFolia()) Bukkit.getRegionScheduler().execute(this, game.getLocation(), game::unload);
             else game.unload();
         }
 

@@ -385,7 +385,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
 
                 List<ConnectPlayer> losers = this.participants.values().stream()
                         .filter(x -> x.getUniqueId() != player.getUniqueId())
-                        .collect(Collectors.toList());
+                        .toList();
 
                 String loserNames = losers.stream()
                         .map(x -> x.getPlayer().getName())
