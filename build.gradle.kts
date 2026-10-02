@@ -36,9 +36,9 @@ dependencies {
 
     // Commands, Configs & Database
     api("org.spongepowered:configurate-yaml:4.2.0")
-    api("org.incendo:cloud-core:2.0.0")
-    api("org.incendo:cloud-annotations:2.0.0")
-    api("org.incendo:cloud-paper:2.0.0")
+    api("org.incendo:cloud-core:2.1.0")
+    api("org.incendo:cloud-annotations:2.1.0")
+    api("org.incendo:cloud-paper:2.0.1")
     api("com.zaxxer:HikariCP:4.0.3")
     api("dev.triumphteam:triumph-gui:3.1.13") {
         exclude(group = "com.google.code.gson", module = "gson")
