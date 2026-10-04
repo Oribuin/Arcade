@@ -588,8 +588,8 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
 
     public void updateText(Component component) {
         if (!(this.location.getWorld().getEntity(this.infoBoard) instanceof TextDisplay display)) return;
-
-        display.text(component);
+        
+        PluginScheduler.get().runTaskAtEntity(display, () -> display.text(component));
     }
 
     /**
