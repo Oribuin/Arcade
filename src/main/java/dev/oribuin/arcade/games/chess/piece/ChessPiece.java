@@ -4,35 +4,35 @@ import com.destroystokyo.paper.profile.PlayerProfile;
 import dev.oribuin.arcade.games.chess.ChessGame;
 import dev.oribuin.arcade.games.chess.board.BoardPosition;
 import dev.oribuin.arcade.games.chess.board.ChessBoard;
+import dev.oribuin.arcade.scheduler.PluginScheduler;
+import dev.oribuin.arcade.util.EntityUtils;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ResolvableProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Skull;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.profile.PlayerTextures;
 import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
-import javax.swing.plaf.synth.SynthTableHeaderUI;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import static dev.oribuin.arcade.games.chess.ChessGame.PIECE_SIZE;
-import static dev.oribuin.arcade.games.chess.ChessGame.SQUARE_SIZE;
 
 /**
  * Represents a piece that will exist on the board for a player to move
@@ -69,9 +69,8 @@ public abstract class ChessPiece {
      * Place a piece on the board
      *
      * @param location  The location of the piece
-     * @param direction The direction of the piece
      */
-    public void place(@NotNull ChessGame game, @NotNull Location location, @NotNull BlockFace direction) {
+    public void place(@NotNull ChessGame game, @NotNull Location location, @NotNull UUID square) {
         Transformation transformation = new Transformation(
                 new Vector3f(),
 //                new Vector3f(-(PIECE_SIZE / 2), 0, -(PIECE_SIZE / 2)),
@@ -79,7 +78,7 @@ public abstract class ChessPiece {
                 new Vector3f(PIECE_SIZE, PIECE_SIZE, PIECE_SIZE),
                 new AxisAngle4f()
         );
-        
+
         ItemDisplay entity = location.getWorld().spawn(
                 location,
                 ItemDisplay.class,
@@ -90,11 +89,15 @@ public abstract class ChessPiece {
                     x.setDisplayHeight(PIECE_SIZE);
                     x.setBillboard(Display.Billboard.FIXED);
                     x.setTransformation(transformation);
-                    
+
                     this.apply().accept(x);
                 });
 
         this.display = entity.getUniqueId();
+        this.position.setLocation(location);
+        this.position.setSquare(square);
+        game.getBoard().set(this);
+        
     }
 
     /**
@@ -103,8 +106,33 @@ public abstract class ChessPiece {
      * @param position The new position of the piece
      */
     public void move(@NotNull BoardPosition position) {
+        Location current = this.position.getLocation();
+        Location target = position.getLocation();
+
+        // Check whether the two locations exist
+        if (!(Bukkit.getEntity(this.display) instanceof BlockDisplay entity)) return;
+        if (current == null || target == null) return;
+        if (!current.getWorld().equals(target.getWorld())) return;
+
+        // For other nosey developers:
+        // If you want to make the pieces actually move on the chess board like they're supposed to (across the squares)
+        // be my guest <3 I will not be doing that.
+
         this.position = position;
-        // TODO: move the entity
+        int distance = (int) target.distance(current);
+        Vector direction = target.toVector().clone().subtract(current.toVector()).normalize();
+        List<Location> line = new ArrayList<>();
+        for (double i = 0; i < distance; i += 0.5) {
+            Location location = current.clone().add(direction.clone().multiply(i));
+            line.add(location);
+        }
+
+        // look away this is ugly
+        int count = 0;
+        for (Location location : line) {
+            count++;
+            PluginScheduler.get().runTaskAtEntityLater(entity, () -> entity.teleport(location), count * 5L);
+        }
     }
 
     /**
@@ -112,7 +140,7 @@ public abstract class ChessPiece {
      */
     public void remove() {
         this.position = null;
-        // TODO: Remove the entity
+        EntityUtils.safelyModify(this.display, Entity::remove);
     }
 
     /**
@@ -146,12 +174,16 @@ public abstract class ChessPiece {
             data.setData(DataComponentTypes.PROFILE, ResolvableProfile.resolvableProfile(profile));
         } catch (MalformedURLException | NullPointerException | IllegalArgumentException ignored) {
         }
-        
+
         return data;
     }
 
     public UUID getDisplay() {
         return display;
+    }
+
+    public void setDisplay(UUID display) {
+        this.display = display;
     }
 
     public PieceType getType() {

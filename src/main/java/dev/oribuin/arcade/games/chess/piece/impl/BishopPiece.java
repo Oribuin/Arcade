@@ -6,9 +6,6 @@ import dev.oribuin.arcade.games.chess.piece.ChessPiece;
 import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
-import org.bukkit.block.Skull;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -63,8 +60,8 @@ public class BishopPiece extends ChessPiece {
         // region Top Right
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() + i,
-                    this.position.column() + i
+                    this.position.getRow() + i,
+                    this.position.getColumn() + i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
@@ -79,8 +76,8 @@ public class BishopPiece extends ChessPiece {
         // region Top Left
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() - i,
-                    this.position.column() + i
+                    this.position.getRow() - i,
+                    this.position.getColumn() + i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
@@ -95,8 +92,8 @@ public class BishopPiece extends ChessPiece {
         // region Bottom Right
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() + i,
-                    this.position.column() - i
+                    this.position.getRow() + i,
+                    this.position.getColumn() - i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
@@ -111,8 +108,8 @@ public class BishopPiece extends ChessPiece {
         // region Bottom Left
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() - i,
-                    this.position.column() - i
+                    this.position.getRow() - i,
+                    this.position.getColumn() - i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);

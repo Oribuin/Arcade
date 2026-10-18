@@ -68,6 +68,9 @@ public class Messages {
 
     @Comment("The messages sent for connect four")
     private ConnectFour connectFour = new ConnectFour();
+    
+    @Comment("The messages sent for chess")
+    private Chess chess = new Chess();
 
     @ConfigSerializable
     @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
@@ -80,6 +83,19 @@ public class Messages {
             return notUsersTurn;
         }
     }
+    
+    @ConfigSerializable
+    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
+    public static class Chess {
+
+        @Comment("The info board text for the current team")
+        private String currentTeamInfo ="<white>It is <#93bc80><team><white> Turn <dark_gray>| <#93bc80><time>";
+
+        public String getCurrentTeamInfo() {
+            return currentTeamInfo;
+        }
+    }
+    
 
     public static Messages get() {
         return ArcadePlugin.getInstance().getConfigLoader().get(Messages.class);
@@ -159,5 +175,9 @@ public class Messages {
 
     public ConnectFour getConnectFour() {
         return connectFour;
+    }
+
+    public Chess getChess() {
+        return chess;
     }
 }

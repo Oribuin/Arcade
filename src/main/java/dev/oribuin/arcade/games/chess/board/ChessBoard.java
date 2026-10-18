@@ -35,7 +35,14 @@ public class ChessBoard {
      */
     public ChessBoard() {
         this.pieces = HashBasedTable.create();
+        this.reset();
+    }
 
+    /**
+     * Reset the chess board positions
+     */
+    public void reset() {
+        this.pieces.clear();
         // Set the pawn pieces into the board
         for (int slot = 1; slot <= 8; slot++) {
             this.place(PAWN, PieceTeam.WHITE, new BoardPosition(2, slot));
@@ -75,7 +82,7 @@ public class ChessBoard {
      * @param pos Where the piece is locating
      */
     private void place(@NotNull PieceType type, @NotNull PieceTeam team, @NotNull BoardPosition pos) {
-        this.pieces.put(pos.row(), pos.column(), type.createPiece(team, pos));
+        this.pieces.put(pos.getRow(), pos.getColumn(), type.createPiece(team, pos));
     }
 
     /**
@@ -148,6 +155,15 @@ public class ChessBoard {
     }
 
     /**
+     * Set a piece on the board to update it 
+     * 
+     * @param piece The piece to update
+     */
+    public void set(@NotNull ChessPiece piece) {
+        this.pieces.put(piece.getPosition().getRow(), piece.getPosition().getColumn(), piece);
+    }
+    
+    /**
      * Remove the existing piece from the board
      *
      * @param position The position to move
@@ -167,9 +183,9 @@ public class ChessBoard {
     public ChessPiece getPiece(@NotNull BoardPosition position) {
         if (!isInBounds(position)) return null;
 
-        return this.pieces.get(position.row(), position.column());
+        return this.pieces.get(position.getRow(), position.getColumn());
     }
-
+    
     /**
      * Get the character for the row
      *
@@ -197,7 +213,7 @@ public class ChessBoard {
      * @return Whether the position is accepted
      */
     public static boolean isInBounds(@NotNull BoardPosition slot) {
-        return isInBounds(slot.row()) || isInBounds(slot.column());
+        return isInBounds(slot.getRow()) || isInBounds(slot.getColumn());
     }
 
     public Table<Integer, Integer, ChessPiece> getPieces() {

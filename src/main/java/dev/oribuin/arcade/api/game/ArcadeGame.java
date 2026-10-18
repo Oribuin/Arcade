@@ -86,7 +86,7 @@ public abstract class ArcadeGame<T extends Participant> extends EventHandler imp
         Messages.get().getPlayerJoinedGame().send(this, "player", player.getName());
         Messages.get().getJoinedGame().send(player, "game", ArcadeUtils.niceify(this.name));
         this.participants.put(player.getUniqueId(), participant);
-
+        
         // Check if the game has reached the required players
         if (this.participants.size() == this.playerCount) {
             this.start();

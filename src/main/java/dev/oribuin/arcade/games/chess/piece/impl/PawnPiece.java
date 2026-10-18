@@ -72,8 +72,8 @@ public class PawnPiece extends ChessPiece {
         // region Check whether the pawn can move forward 
         for (int i = 1; i <= moveDistance; i++) {
             BoardPosition available = new BoardPosition(
-                    this.position.row(),
-                    this.position.column() + i
+                    this.position.getRow(),
+                    this.position.getColumn() + i
             );
 
             ChessPiece existing = board.getPiece(available);
@@ -86,13 +86,13 @@ public class PawnPiece extends ChessPiece {
 
         // region Check whether the pawn can attack diagonally
         BoardPosition leftPos = new BoardPosition(
-                this.position.row() - 1,
-                this.position.column() + moveDistance
+                this.position.getRow() - 1,
+                this.position.getColumn() + moveDistance
         );
 
         BoardPosition rightPos = new BoardPosition(
-                this.position.row() + 1,
-                this.position.column() + moveDistance
+                this.position.getRow() + 1,
+                this.position.getColumn() + moveDistance
         );
 
         if (board.isAvailable(this, leftPos)) result.add(leftPos);

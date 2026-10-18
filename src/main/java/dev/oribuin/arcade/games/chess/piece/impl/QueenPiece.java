@@ -59,8 +59,8 @@ public class QueenPiece extends ChessPiece {
 
         // up & down
         for (int i = -distance; i <= distance; i++) {
-            BoardPosition pos = new BoardPosition(this.position.row(), this.position.column() + i);
-            if (pos.row() == this.position.row() && pos.column() == this.position.column()) continue;
+            BoardPosition pos = new BoardPosition(this.position.getRow(), this.position.getColumn() + i);
+            if (pos.getRow() == this.position.getRow() && pos.getColumn() == this.position.getColumn()) continue;
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
             if (!checkResult.isTakeable()) break; // Check whether the position is takeable
@@ -73,8 +73,8 @@ public class QueenPiece extends ChessPiece {
 
         // left & right
         for (int i = -distance; i <= distance; i++) {
-            BoardPosition pos = new BoardPosition(this.position.row() + i, this.position.column());
-            if (pos.row() == this.position.row() && pos.column() == this.position.column()) continue;
+            BoardPosition pos = new BoardPosition(this.position.getRow() + i, this.position.getColumn());
+            if (pos.getRow() == this.position.getRow() && pos.getColumn() == this.position.getColumn()) continue;
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
             if (!checkResult.isTakeable()) break; // Check whether the position is takeable
@@ -87,8 +87,8 @@ public class QueenPiece extends ChessPiece {
         // region Top Right
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() + i,
-                    this.position.column() + i
+                    this.position.getRow() + i,
+                    this.position.getColumn() + i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
@@ -103,8 +103,8 @@ public class QueenPiece extends ChessPiece {
         // region Top Left
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() - i,
-                    this.position.column() + i
+                    this.position.getRow() - i,
+                    this.position.getColumn() + i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
@@ -119,8 +119,8 @@ public class QueenPiece extends ChessPiece {
         // region Bottom Right
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() + i,
-                    this.position.column() - i
+                    this.position.getRow() + i,
+                    this.position.getColumn() - i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
@@ -135,8 +135,8 @@ public class QueenPiece extends ChessPiece {
         // region Bottom Left
         for (int i = 1; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(
-                    this.position.row() - i,
-                    this.position.column() - i
+                    this.position.getRow() - i,
+                    this.position.getColumn() - i
             );
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);

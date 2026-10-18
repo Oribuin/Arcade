@@ -57,13 +57,13 @@ public class KnightPiece extends ChessPiece {
 
         // region Forward Left & Right
         BoardPosition forwardLeft = new BoardPosition(
-                this.position.row() - column,
-                this.position.column() + row
+                this.position.getRow() - column,
+                this.position.getColumn() + row
         );
 
         BoardPosition forwardRight = new BoardPosition(
-                this.position.row() + column,
-                this.position.column() + row
+                this.position.getRow() + column,
+                this.position.getColumn() + row
         );
 
         if (board.isAvailable(this, forwardLeft)) result.add(forwardLeft);
@@ -72,13 +72,13 @@ public class KnightPiece extends ChessPiece {
 
         // region Backward Left & Right
         BoardPosition backwardLeft = new BoardPosition(
-                this.position.row() - column,
-                this.position.column() - row
+                this.position.getRow() - column,
+                this.position.getColumn() - row
         );
 
         BoardPosition backwardRight = new BoardPosition(
-                this.position.row() + column,
-                this.position.column() - row
+                this.position.getRow() + column,
+                this.position.getColumn() - row
         );
 
         if (board.isAvailable(this, backwardLeft)) result.add(backwardLeft);
@@ -87,13 +87,13 @@ public class KnightPiece extends ChessPiece {
 
         // region Left Up & Down
         BoardPosition leftUp = new BoardPosition(
-                this.position.row() - row,
-                this.position.column() + column
+                this.position.getRow() - row,
+                this.position.getColumn() + column
         );
 
         BoardPosition leftDown = new BoardPosition(
-                this.position.row() - row,
-                this.position.column() - column
+                this.position.getRow() - row,
+                this.position.getColumn() - column
         );
 
         if (board.isAvailable(this, leftUp)) result.add(leftUp);
@@ -102,13 +102,13 @@ public class KnightPiece extends ChessPiece {
 
         // region Right Up & Down
         BoardPosition rightUp = new BoardPosition(
-                this.position.row() + row,
-                this.position.column() + column
+                this.position.getRow() + row,
+                this.position.getColumn() + column
         );
 
         BoardPosition rightDown = new BoardPosition(
-                this.position.row() + row,
-                this.position.column() - column
+                this.position.getRow() + row,
+                this.position.getColumn() - column
         );
 
         if (board.isAvailable(this, rightUp)) result.add(rightUp);

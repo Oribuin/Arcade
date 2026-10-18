@@ -9,8 +9,8 @@ group = "dev.oribuin"
 version = "1.0-SNAPSHOT"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 
     disableAutoTargetJvm()
     toolchain {
@@ -45,7 +45,7 @@ dependencies {
         exclude(group = "net.kyori", module = "*")
     }
     // Spigot
-    compileOnly("io.papermc.paper:paper-api:26.2.build.+")
+    compileOnly("io.papermc.paper:paper-api:26.3.build.+")
 
     // External Plugins
     compileOnly("me.clip:placeholderapi:2.12.3")

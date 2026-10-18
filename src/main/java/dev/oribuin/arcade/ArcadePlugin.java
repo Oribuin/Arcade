@@ -15,13 +15,17 @@ import dev.oribuin.arcade.manager.DataManager;
 import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.wrapper.SchedulerWrapper;
 import dev.oribuin.arcade.util.NMSUtil;
+import io.papermc.paper.persistence.PersistentDataKey;
 import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
@@ -81,6 +85,18 @@ public class ArcadePlugin extends JavaPlugin implements Listener {
         }
 
         GameRegistry.get().getInstances().clear();
+    }
+
+    /**
+     * Create a new namespace key for the plugin 
+     * @param text The text of the namespace key 
+     * @param type The data type
+     * @return The resulting data key
+     * @param <T> The type of data key 
+     */
+    @NotNull
+    public static <T> PersistentDataKey<T> namespace(@NotNull String text, @NotNull PersistentDataType<?, T> type) {
+        return PersistentDataKey.of(new NamespacedKey(ArcadePlugin.getInstance(), text), type);
     }
 
     public static ArcadePlugin getInstance() {

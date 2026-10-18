@@ -10,6 +10,5 @@ public enum MoveCheckResult {
     public boolean isTakeable() {
         return this == AVAILABLE_SPACE || this == ENEMY;
     }
-
-
+    
 }

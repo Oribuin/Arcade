@@ -13,6 +13,7 @@ import dev.oribuin.arcade.scheduler.PluginScheduler;
 import dev.oribuin.arcade.scheduler.task.ScheduledTask;
 import dev.oribuin.arcade.statistic.GameStats;
 import dev.oribuin.arcade.util.ArcadeUtils;
+import dev.oribuin.arcade.util.EntityUtils;
 import dev.oribuin.arcade.util.Placeholders;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -211,7 +212,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public boolean join(Player player) {
         boolean result = super.join(player);
         if (this.playerCount - this.participants.size() != 0) {
-            this.updateText(ArcadeUtils.kyorify(
+            this.updateTextInfo(ArcadeUtils.kyorify(
                     Messages.get().getInactiveInfoBoard(),
                     Placeholders.of("remaining", this.playerCount - this.participants.size())
             ));
@@ -230,7 +231,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
     public boolean leave(Player player, boolean isRagequit) {
         boolean result = super.leave(player, isRagequit);
         if (this.playerCount - this.participants.size() != 0) {
-            this.updateText(ArcadeUtils.kyorify(
+            this.updateTextInfo(ArcadeUtils.kyorify(
                     Messages.get().getInactiveInfoBoard(),
                     Placeholders.of("remaining", this.playerCount - this.participants.size())
             ));
@@ -261,7 +262,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
                         Messages.get().getActiveInfoJoiner()
                 ));
 
-        this.updateText(ArcadeUtils.kyorify(joining));
+        this.updateTextInfo(ArcadeUtils.kyorify(joining));
 
         this.task = PluginScheduler.get().runTaskTimerAtLocation(this.location, () -> {
             if (!this.active) return;
@@ -308,7 +309,7 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         this.turnQueue.clear();
         this.wipeBoard();
 
-        this.updateText(ArcadeUtils.kyorify(
+        this.updateTextInfo(ArcadeUtils.kyorify(
                 Messages.get().getInactiveInfoBoard(),
                 Placeholders.of("remaining", this.playerCount - this.participants.size())
         ));
@@ -586,10 +587,17 @@ public class ConnectGame extends ArcadeGame<ConnectPlayer> {
         }
     }
 
-    public void updateText(Component component) {
-        if (!(this.location.getWorld().getEntity(this.infoBoard) instanceof TextDisplay display)) return;
-        
-        PluginScheduler.get().runTaskAtEntity(display, () -> display.text(component));
+    /**
+     * Update the text display above the game
+     *
+     * @param component The component to set 
+     */
+    public void updateTextInfo(@NotNull Component component) {
+        EntityUtils.safelyModify(
+                TextDisplay.class,
+                this.infoBoard,
+                display -> display.text(component)
+        );
     }
 
     /**
