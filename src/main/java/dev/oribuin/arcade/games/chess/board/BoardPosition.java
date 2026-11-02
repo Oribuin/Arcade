@@ -1,5 +1,6 @@
 package dev.oribuin.arcade.games.chess.board;
 
+import dev.oribuin.arcade.games.chess.ChessGame;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
@@ -15,8 +16,6 @@ public final class BoardPosition {
     
     private final int row;
     private final int column;
-    private Location location;
-    private UUID square;
     
     /**
      * @param row    The row the position is on, this is typically somewhere from a-h
@@ -67,19 +66,5 @@ public final class BoardPosition {
         return column;
     }
 
-    public Location getLocation() {
-        return location;
-    }
 
-    public void setLocation(Location location) {
-        this.location = location;
-    }
-
-    public UUID getSquare() {
-        return square;
-    }
-
-    public void setSquare(UUID square) {
-        this.square = square;
-    }
 }

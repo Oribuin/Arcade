@@ -17,7 +17,6 @@ import io.papermc.paper.persistence.PersistentDataContainerView;
 import io.papermc.paper.persistence.PersistentDataKey;
 import net.kyori.adventure.text.Component;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -27,6 +26,7 @@ import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -140,18 +140,20 @@ public class ChessGame extends ArcadeGame<ChessPlayer> {
                         CreatureSpawnEvent.SpawnReason.CUSTOM, interaction -> {
                             this.applyIdentifier(interaction);
                             interaction.setResponsive(true);
-                            interaction.setInteractionWidth(SQUARE_SIZE);
-                            interaction.setInteractionHeight(SQUARE_SIZE);
+                            interaction.setInteractionWidth(SQUARE_SIZE * 0.75f);
+                            interaction.setInteractionHeight(SQUARE_SIZE * 0.75f);
 
                             this.setContainerPos(interaction.getPersistentDataContainer(), position);
                         });
 
                 this.boardDisplays.put(squareInteraction.getUniqueId(), square.getUniqueId());
+                this.board.setSquare(position, square.getUniqueId());
+                this.board.getBoardPositions().put(position, squareLoc.clone().add(0, 0.45f, 0));
 
                 // Place the piece associated with the board
                 ChessPiece piece = this.board.getPiece(position);
                 if (piece != null) {
-                    piece.place(this, squareLoc.clone().add(0, 0.45f, 0), square.getUniqueId());
+                    piece.place(this, squareLoc.clone().add(0, 0.45f, 0));
                     this.board.set(piece);
                 }
             }
@@ -217,15 +219,9 @@ public class ChessGame extends ArcadeGame<ChessPlayer> {
     @Override
     public void start() {
         this.active = true;
-        this.board.reset();
         this.teams.clear();
         this.teams.addAll(List.of(PieceTeam.WHITE, PieceTeam.BLACK));
-        
-        System.out.println("Players:");
-        this.participants.forEach((uuid, chessPlayer) -> {
-            System.out.println("uuid[" + uuid + "] " + chessPlayer);
-        });
-        
+
         this.task = PluginScheduler.get().runTaskTimerAtLocation(this.location, () -> {
             if (!this.active) return;
 
@@ -242,28 +238,6 @@ public class ChessGame extends ArcadeGame<ChessPlayer> {
                             "team", StringUtils.capitalize(currentTurn.name().toLowerCase()),
                             "time", "67h"
                     )));
-
-            // TODO: If piece is selected, show available move positions
-            BoardPosition selected = active.getSelected();
-            if (selected != null) {
-                ChessPiece selectedPiece = this.board.getPiece(selected);
-                if (selectedPiece != null) {
-                    selectedPiece.getAvailable(this.board).forEach(position -> {
-                        UUID targetSquare = position.getSquare();
-                        if (targetSquare == null) return;
-
-                        // Make all available squares glow yellow
-                        EntityUtils.safelyModify(BlockDisplay.class, targetSquare, entity -> {
-                            entity.setGlowing(true);
-                            entity.setGlowColorOverride(Color.YELLOW);
-                        });
-                    });
-                }
-
-                return;
-            }
-
-
         }, 100, 150, TimeUnit.MILLISECONDS);
     }
 
@@ -350,61 +324,92 @@ public class ChessGame extends ArcadeGame<ChessPlayer> {
         BoardPosition selected = participant.getSelected();
         if (selected == null) {
             ChessPiece piece = this.board.getPiece(position);
-            
-            event.getPlayer().sendMessage("You have interacted with pos[" + position + "]");
-            event.getPlayer().sendMessage("Does the piece exist[" + (piece != null) + "]");
-            if (piece != null) event.getPlayer().sendMessage("Can interact with piece[" + participant.canInteract(piece) + "]");
-            if (piece == null || !participant.canInteract(piece)) return; // User cannot interact with that piece
-            
-            event.getPlayer().sendMessage("piece display[" + piece.getDisplay() + "]");
+            if (piece == null || !participant.canInteract(piece)) {
+                Messages.get().getChess().getCannotUse().send(player);
+                return; // User cannot interact with that piece
+            }
+
             if (piece.getDisplay() == null) return; // Piece does not exist? how did you click on it....
+            if (piece.getAvailable(this.board).isEmpty()) {
+                Messages.get().getChess().getNoAvailableMoves().send(player);
+                return; // Cannot select a piece that doesn't have any moves
+            }
 
             participant.setSelected(position);
             this.participants.put(player.getUniqueId(), participant);
 
-            event.getPlayer().sendMessage("You have selected piece[" + position + "] with type[" + piece.getType() + "] on team[ " + piece.getTeam() + "]");
+            Messages.get().getChess().getSelectedPiece().send(player, "piece", piece.getType(), "position", piece.getPosition());
+
             // Mark the entity as glowing
             EntityUtils.safelyModify(
-                    BlockDisplay.class,
+                    ItemDisplay.class,
                     piece.getDisplay(),
                     entity -> {
                         entity.setGlowing(true);
                         entity.setGlowColorOverride(Color.LIME);
                     });
 
+            // make the available pieces glow green
+            for (BoardPosition available : piece.getAvailable(this.board)) {
+                UUID square = this.board.getSquare(available);
+                if (square == null) continue;
+
+                // Make all available squares glow yellow
+                EntityUtils.safelyModify(BlockDisplay.class, square, entity -> {
+                    entity.setGlowing(true);
+                    entity.setGlowColorOverride(Color.YELLOW);
+                });
+            }
+
             return;
         }
 
         // Piece is selected, deselect it
         ChessPiece selectedPiece = this.board.getPiece(participant.getSelected());
-        ChessPiece piece = this.board.getPiece(position);
-        if (piece != null && selected.equals(position)) {
+
+        if (selectedPiece != null && selected.equals(position)) {
+            // Remove all glow effects from the board
+            this.resetSelectionGlow(participant);
+
             participant.setSelected(null);
             this.participants.put(player.getUniqueId(), participant);
 
-            // Remove all glow effects from the board
-            this.boardDisplays.values().forEach(uuid -> EntityUtils.safelyModify(BlockDisplay.class,
-                    uuid,
-                    entity -> {
-                        entity.setGlowing(false);
-                        entity.setGlowColorOverride(Color.WHITE);
-                    }));
+            Messages.get().getChess().getDeselectedPiece().send(player);
             return;
         }
 
         if (selectedPiece == null) return; // Selected piece does not exist
 
         // If the move is available, select the piece
-        if (this.board.isAvailable(selectedPiece, position)) {
-            this.board.move(selectedPiece, position);
-            // TODO: Check if the opposing team's king cannot move
+
+        PieceTeam currentTeam = this.teams.peek();
+        if (this.board.isAvailable(selectedPiece, position) ) {
+            Messages.get().getChess().getMovedPiece().send(this,
+                    "player", player.getName(),
+                    "piece", selectedPiece.getType(),
+                    "current", selectedPiece.getPosition(),
+                    "target", position
+            );
+
+            this.resetSelectionGlow(participant);
+
+            // deselect the board
+            participant.setSelected(null);
+            this.participants.put(player.getUniqueId(), participant);
+            
+            if (this.board.move(selectedPiece, position)) {
+                // swap the turn for the player
+                this.teams.poll();
+                this.teams.add(currentTeam); // add them back
+                // TODO: Check if the opposing team's king cannot move
+            }
         }
     }
 
     /**
-     * Get the player for the associated team 
+     * Get the player for the associated team
      *
-     * @param team The team 
+     * @param team The team
      * @return The player if available
      */
     @Nullable
@@ -433,7 +438,7 @@ public class ChessGame extends ArcadeGame<ChessPlayer> {
     /**
      * Update the text display above the game
      *
-     * @param component The component to set 
+     * @param component The component to set
      */
     public void updateTextInfo(@NotNull Component component) {
         EntityUtils.safelyModify(
@@ -444,14 +449,43 @@ public class ChessGame extends ArcadeGame<ChessPlayer> {
     }
 
     /**
-     * Apply a board position to an entity 
+     * Reset the selection glow for the player
+     *
+     * @param participant The participant with the selected piece
+     */
+    public void resetSelectionGlow(@NotNull ChessPlayer participant) {
+        ChessPiece selectedPiece = this.board.getPiece(participant.getSelected());
+        if (selectedPiece != null) {
+            EntityUtils.safelyModify(
+                    ItemDisplay.class,
+                    selectedPiece.getDisplay(),
+                    entity -> {
+                        entity.setGlowing(false);
+                        entity.setGlowColorOverride(Color.WHITE);
+                    });
+        }
+
+        this.boardDisplays.values().forEach(uuid -> EntityUtils.safelyModify(BlockDisplay.class,
+                uuid,
+                entity -> {
+                    entity.setGlowing(false);
+                    entity.setGlowColorOverride(Color.WHITE);
+                }));
+    }
+
+    public void updatePiece(@NotNull ChessPiece piece) {
+        this.board.set(piece);
+    }
+
+    /**
+     * Apply a board position to an entity
      *
      * @param container The container to modify
-     * @param position The position to apply
+     * @param position  The position to apply
      */
     public void setContainerPos(@NotNull PersistentDataContainer container, @NotNull BoardPosition position) {
         container.set(POSITION_ROW, position.getRow());
-        container.set(POSITION_COL, position.getRow());
+        container.set(POSITION_COL, position.getColumn());
     }
 
     /**

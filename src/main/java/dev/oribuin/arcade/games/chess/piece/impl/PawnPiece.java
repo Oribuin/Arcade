@@ -3,10 +3,12 @@ package dev.oribuin.arcade.games.chess.piece.impl;
 import dev.oribuin.arcade.games.chess.board.BoardPosition;
 import dev.oribuin.arcade.games.chess.board.ChessBoard;
 import dev.oribuin.arcade.games.chess.piece.ChessPiece;
+import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.inventory.ItemStack;
+import org.checkerframework.checker.i18nformatter.qual.I18nFormat;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -45,18 +47,19 @@ public class PawnPiece extends ChessPiece {
     public Consumer<ItemDisplay> apply() {
         return x -> x.setItemStack(team == PieceTeam.WHITE ? WHITE : BLACK);
     }
-    
+
     /**
      * Move the chess piece to the new position
      *
+     * @param board The board the piece is on
      * @param position The new position of the piece
      */
     @Override
-    public void move(@NotNull BoardPosition position) {
-        super.move(position);
-        this.hasMoved = true;
+    public void move(@NotNull ChessBoard board, @NotNull BoardPosition position) {
+        super.move(board, position);
+        this.hasMoved = true; // TODO: Fix this literally not working at all
     }
-
+    
     /**
      * Gets the available positions the piece can move to
      *
@@ -65,24 +68,28 @@ public class PawnPiece extends ChessPiece {
      */
     @Override
     public @NotNull List<BoardPosition> getAvailable(@NotNull ChessBoard board) {
-        int baseDistance = this.hasMoved ? 1 : 2;
-        int moveDistance = team == PieceTeam.WHITE ? baseDistance : -baseDistance;
+        int moveDistance = team == PieceTeam.WHITE ? 1 : -1;
 
         List<BoardPosition> result = new ArrayList<>();
-        // region Check whether the pawn can move forward 
-        for (int i = 1; i <= moveDistance; i++) {
-            BoardPosition available = new BoardPosition(
-                    this.position.getRow(),
-                    this.position.getColumn() + i
+        // region Check whether the pawn can move forward
+        BoardPosition ahead = new BoardPosition(
+                this.position.getRow() + moveDistance, 
+                this.position.getColumn()
+        );
+        
+        MoveCheckResult check = board.checkPosition(this, ahead);
+        if (check == MoveCheckResult.AVAILABLE_SPACE) result.add(ahead);
+        
+        // Pawns have the ability to move twice on their first turn
+        if (!this.hasMoved && result.contains(ahead)) {
+            BoardPosition aheadAgain = new BoardPosition(
+                    this.position.getRow() + (team == PieceTeam.WHITE ? 2 : -2),
+                    this.position.getColumn()
             );
 
-            ChessPiece existing = board.getPiece(available);
-            if (existing != null) break; // Pawns are not able to hop over a piece
-
-            result.add(available);
+            MoveCheckResult checkAgain = board.checkPosition(this, aheadAgain);
+            if (checkAgain == MoveCheckResult.AVAILABLE_SPACE) result.add(aheadAgain);
         }
-        // endregion 
-        moveDistance = team == PieceTeam.WHITE ? 1 : -1;
 
         // region Check whether the pawn can attack diagonally
         BoardPosition leftPos = new BoardPosition(
@@ -95,8 +102,8 @@ public class PawnPiece extends ChessPiece {
                 this.position.getColumn() + moveDistance
         );
 
-        if (board.isAvailable(this, leftPos)) result.add(leftPos);
-        if (board.isAvailable(this, rightPos)) result.add(rightPos);
+        if (board.checkPosition(this, leftPos) == MoveCheckResult.ENEMY) result.add(leftPos);
+        if (board.checkPosition(this, rightPos) == MoveCheckResult.ENEMY) result.add(rightPos);
         // endregion
 
         return result;

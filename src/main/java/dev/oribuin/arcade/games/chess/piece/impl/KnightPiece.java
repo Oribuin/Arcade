@@ -3,6 +3,7 @@ package dev.oribuin.arcade.games.chess.piece.impl;
 import dev.oribuin.arcade.games.chess.board.BoardPosition;
 import dev.oribuin.arcade.games.chess.board.ChessBoard;
 import dev.oribuin.arcade.games.chess.piece.ChessPiece;
+import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
 import org.bukkit.entity.ItemDisplay;
@@ -12,6 +13,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.AVAILABLE_SPACE;
+import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ENEMY;
 
 /**
  * Represents a piece that will exist on the board for a player to move
@@ -66,8 +70,8 @@ public class KnightPiece extends ChessPiece {
                 this.position.getColumn() + row
         );
 
-        if (board.isAvailable(this, forwardLeft)) result.add(forwardLeft);
-        if (board.isAvailable(this, forwardRight)) result.add(forwardRight);
+        if (this.isAvailable(board, forwardLeft)) result.add(forwardLeft);
+        if (this.isAvailable(board, forwardRight)) result.add(forwardRight);
         // endregion
 
         // region Backward Left & Right
@@ -81,8 +85,8 @@ public class KnightPiece extends ChessPiece {
                 this.position.getColumn() - row
         );
 
-        if (board.isAvailable(this, backwardLeft)) result.add(backwardLeft);
-        if (board.isAvailable(this, backwardRight)) result.add(backwardRight);
+        if (this.isAvailable(board, backwardLeft)) result.add(backwardLeft);
+        if (this.isAvailable(board, backwardRight)) result.add(backwardRight);
         // endregion        
 
         // region Left Up & Down
@@ -96,8 +100,8 @@ public class KnightPiece extends ChessPiece {
                 this.position.getColumn() - column
         );
 
-        if (board.isAvailable(this, leftUp)) result.add(leftUp);
-        if (board.isAvailable(this, leftDown)) result.add(leftDown);
+        if (this.isAvailable(board, leftUp)) result.add(leftUp);
+        if (this.isAvailable(board, leftDown)) result.add(leftDown);
         // endregion        
 
         // region Right Up & Down
@@ -111,12 +115,27 @@ public class KnightPiece extends ChessPiece {
                 this.position.getColumn() - column
         );
 
-        if (board.isAvailable(this, rightUp)) result.add(rightUp);
-        if (board.isAvailable(this, rightDown)) result.add(rightDown);
+        if (this.isAvailable(board, rightUp)) result.add(rightUp);
+        if (this.isAvailable(board, rightDown)) result.add(rightDown);
         // endregion
 
         return result;
     }
+
+    /**
+     * Check whether a piece is able to occupy a position on the board
+     *
+     * @param board    The board to check
+     * @param position Where the piece wants to go
+     * @return Whether the position is available
+     */
+    public boolean isAvailable(@NotNull ChessBoard board, @NotNull BoardPosition position) {
+        MoveCheckResult result = board.checkPosition(this, position);
+        return result == AVAILABLE_SPACE || result == ENEMY;
+    }
+
+
+
 
 
 }

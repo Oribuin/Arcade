@@ -6,8 +6,13 @@ import dev.oribuin.arcade.games.chess.piece.ChessPiece;
 import dev.oribuin.arcade.games.chess.piece.MoveCheckResult;
 import dev.oribuin.arcade.games.chess.piece.PieceTeam;
 import dev.oribuin.arcade.games.chess.piece.PieceType;
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.ALLY;
 import static dev.oribuin.arcade.games.chess.piece.MoveCheckResult.AVAILABLE_SPACE;
@@ -29,12 +34,16 @@ public class ChessBoard {
     private static final char[] LETTERS = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 
     private final Table<Integer, Integer, ChessPiece> pieces;
+    private final Map<BoardPosition, UUID> squareDisplays;
+    private final Map<BoardPosition, Location> boardPositions;
 
     /**
-     * Creates a new chess board for the plugin 
+     * Creates a new chess board for the plugin
      */
     public ChessBoard() {
         this.pieces = HashBasedTable.create();
+        this.squareDisplays = new HashMap<>();
+        this.boardPositions = new HashMap<>();
         this.reset();
     }
 
@@ -43,6 +52,7 @@ public class ChessBoard {
      */
     public void reset() {
         this.pieces.clear();
+
         // Set the pawn pieces into the board
         for (int slot = 1; slot <= 8; slot++) {
             this.place(PAWN, PieceTeam.WHITE, new BoardPosition(2, slot));
@@ -75,11 +85,11 @@ public class ChessBoard {
     }
 
     /**
-     * Create a new piece and place it on the board 
+     * Create a new piece and place it on the board
      *
      * @param type The type of piece to place
      * @param team The team the piece is on
-     * @param pos Where the piece is locating
+     * @param pos  Where the piece is locating
      */
     private void place(@NotNull PieceType type, @NotNull PieceTeam team, @NotNull BoardPosition pos) {
         this.pieces.put(pos.getRow(), pos.getColumn(), type.createPiece(team, pos));
@@ -106,7 +116,7 @@ public class ChessBoard {
      * @return Whether the position is available
      */
     public MoveCheckResult checkPosition(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
-        if (!ChessBoard.isInBounds(position)) return OUT_OF_BOUNDS; // not in bounds so its not available
+        if (!ChessBoard.isInBounds(position)) return OUT_OF_BOUNDS; // not in bounds so it's not available
 
         ChessPiece existing = this.getPiece(position);
         if (existing == null) return AVAILABLE_SPACE;
@@ -123,6 +133,8 @@ public class ChessBoard {
      * @return Whether the position is available
      */
     public boolean isAvailable(@NotNull ChessPiece piece, @NotNull BoardPosition position) {
+        if (!piece.getAvailable(this).contains(position)) return false;
+        
         MoveCheckResult result = this.checkPosition(piece, position);
         return result == AVAILABLE_SPACE || result == ENEMY;
     }
@@ -139,7 +151,7 @@ public class ChessBoard {
 
         ChessPiece existing = this.getPiece(position);
         if (existing == null) {
-            piece.move(position);
+            piece.move(this, position);
             return true;
         }
 
@@ -150,19 +162,19 @@ public class ChessBoard {
         if (existing.getType() == KING) return false;
 
         existing.remove();
-        piece.move(position);
+        piece.move(this, position);
         return true;
     }
 
     /**
-     * Set a piece on the board to update it 
-     * 
+     * Set a piece on the board to update it
+     *
      * @param piece The piece to update
      */
     public void set(@NotNull ChessPiece piece) {
         this.pieces.put(piece.getPosition().getRow(), piece.getPosition().getColumn(), piece);
     }
-    
+
     /**
      * Remove the existing piece from the board
      *
@@ -185,7 +197,28 @@ public class ChessBoard {
 
         return this.pieces.get(position.getRow(), position.getColumn());
     }
-    
+
+    /**
+     * Get a square display for the chess board
+     *
+     * @param position The position of the square
+     * @return The resulting square
+     */
+    @Nullable
+    public UUID getSquare(@NotNull BoardPosition position) {
+        return this.squareDisplays.get(position);
+    }
+
+    /**
+     * Set a square display uuid into the map
+     *
+     * @param position The board position
+     * @param display  The display
+     */
+    public void setSquare(@NotNull BoardPosition position, @NotNull UUID display) {
+        this.squareDisplays.put(position, display);
+    }
+
     /**
      * Get the character for the row
      *
@@ -218,5 +251,9 @@ public class ChessBoard {
 
     public Table<Integer, Integer, ChessPiece> getPieces() {
         return pieces;
+    }
+
+    public Map<BoardPosition, Location> getBoardPositions() {
+        return boardPositions;
     }
 }

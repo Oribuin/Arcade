@@ -11,7 +11,6 @@ import io.papermc.paper.datacomponent.item.ResolvableProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
@@ -68,9 +67,9 @@ public abstract class ChessPiece {
     /**
      * Place a piece on the board
      *
-     * @param location  The location of the piece
+     * @param location The location of the piece
      */
-    public void place(@NotNull ChessGame game, @NotNull Location location, @NotNull UUID square) {
+    public void place(@NotNull ChessGame game, @NotNull Location location) {
         Transformation transformation = new Transformation(
                 new Vector3f(),
 //                new Vector3f(-(PIECE_SIZE / 2), 0, -(PIECE_SIZE / 2)),
@@ -94,23 +93,20 @@ public abstract class ChessPiece {
                 });
 
         this.display = entity.getUniqueId();
-        this.position.setLocation(location);
-        this.position.setSquare(square);
-        game.getBoard().set(this);
-        
     }
 
     /**
      * Move the chess piece to the new position
      *
+     * @param board    The board the piece is on
      * @param position The new position of the piece
      */
-    public void move(@NotNull BoardPosition position) {
-        Location current = this.position.getLocation();
-        Location target = position.getLocation();
+    public void move(@NotNull ChessBoard board, @NotNull BoardPosition position) {
+        Location current = board.getBoardPositions().get(this.position);
+        Location target = board.getBoardPositions().get(position);
 
         // Check whether the two locations exist
-        if (!(Bukkit.getEntity(this.display) instanceof BlockDisplay entity)) return;
+        if (!(Bukkit.getEntity(this.display) instanceof ItemDisplay entity)) return;
         if (current == null || target == null) return;
         if (!current.getWorld().equals(target.getWorld())) return;
 
@@ -122,16 +118,19 @@ public abstract class ChessPiece {
         int distance = (int) target.distance(current);
         Vector direction = target.toVector().clone().subtract(current.toVector()).normalize();
         List<Location> line = new ArrayList<>();
-        for (double i = 0; i < distance; i += 0.5) {
+        for (double i = 0; i < distance; i += 0.05) {
             Location location = current.clone().add(direction.clone().multiply(i));
             line.add(location);
         }
+
+        line.add(target);
 
         // look away this is ugly
         int count = 0;
         for (Location location : line) {
             count++;
-            PluginScheduler.get().runTaskAtEntityLater(entity, () -> entity.teleport(location), count * 5L);
+
+            PluginScheduler.get().runTaskAtEntityLater(entity, () -> entity.teleport(location), count * 2L);
         }
     }
 
@@ -176,6 +175,15 @@ public abstract class ChessPiece {
         }
 
         return data;
+    }
+
+    @Override
+    public String toString() {
+        return "ChessPiece{" +
+                "position=" + position +
+                ", type=" + type +
+                ", team=" + team +
+                '}';
     }
 
     public UUID getDisplay() {

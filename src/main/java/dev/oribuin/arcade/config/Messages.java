@@ -87,12 +87,49 @@ public class Messages {
     @ConfigSerializable
     @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
     public static class Chess {
+        public static final String CHESS_PREFIX = "<#94bc80><b>Chess</b> <gray>| <white>";
 
         @Comment("The info board text for the current team")
         private String currentTeamInfo ="<white>It is <#93bc80><team><white> Turn <dark_gray>| <#93bc80><time>";
-
+        
+        private TextMessage cannotUse = new TextMessage(CHESS_PREFIX + "You cannot move a piece that doesn't belong to you");
+        private TextMessage selectedPiece = new TextMessage(CHESS_PREFIX + "You have selected <#93bc80><piece> <position>");
+        private TextMessage deselectedPiece = new TextMessage(CHESS_PREFIX + "You have deselected a piece");
+        private TextMessage movedPiece = new TextMessage(CHESS_PREFIX + "<#93bc80><player><white> has moved <white><#93bc80><piece> <white>from <#93bc80><current> <white>➡ <#93bc80><target>");
+        private TextMessage tookPiece = new TextMessage(CHESS_PREFIX + "<#93bc80><player> <white>took the opposing team's <#93bc80><piece>");
+        private TextMessage cannotMoveHere  = new TextMessage(CHESS_PREFIX + "You cannot move this piece to this location");
+        private TextMessage noAvailableMoves = new TextMessage(CHESS_PREFIX + "This piece has no available moves");
+        
         public String getCurrentTeamInfo() {
             return currentTeamInfo;
+        }
+
+        public TextMessage getSelectedPiece() {
+            return selectedPiece;
+        }
+
+        public TextMessage getDeselectedPiece() {
+            return deselectedPiece;
+        }
+
+        public TextMessage getMovedPiece() {
+            return movedPiece;
+        }
+
+        public TextMessage getTookPiece() {
+            return tookPiece;
+        }
+
+        public TextMessage getCannotMoveHere() {
+            return cannotMoveHere;
+        }
+
+        public TextMessage getNoAvailableMoves() {
+            return noAvailableMoves;
+        }
+
+        public TextMessage getCannotUse() {
+            return cannotUse;
         }
     }
     

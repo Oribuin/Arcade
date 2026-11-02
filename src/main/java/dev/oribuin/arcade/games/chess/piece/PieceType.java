@@ -7,6 +7,7 @@ import dev.oribuin.arcade.games.chess.piece.impl.KnightPiece;
 import dev.oribuin.arcade.games.chess.piece.impl.PawnPiece;
 import dev.oribuin.arcade.games.chess.piece.impl.QueenPiece;
 import dev.oribuin.arcade.games.chess.piece.impl.RookPiece;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.BiFunction;
@@ -36,4 +37,9 @@ public enum PieceType {
         return this.supplier.apply(team, position);
     }
 
+    @Override
+    public String toString() {
+        return StringUtils.capitalize(this.name().toLowerCase());
+    }
+    
 }

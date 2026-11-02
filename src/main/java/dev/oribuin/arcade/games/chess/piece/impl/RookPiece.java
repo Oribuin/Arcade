@@ -57,31 +57,98 @@ public class RookPiece extends ChessPiece {
         List<BoardPosition> result = new ArrayList<>();
         int distance = 8;
 
-        // up & down
-        for (int i = -distance; i <= distance; i++) {
+        // check the up position
+        for (int i = 0; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(this.position.getRow(), this.position.getColumn() + i);
-            if (pos.getRow() == this.position.getRow() && pos.getColumn() == this.position.getColumn()) continue;
+            if (pos.equals(this.position)) continue;
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
-            if (!checkResult.isTakeable()) break; // Check whether the position is takeable
+            if (checkResult == MoveCheckResult.OUT_OF_BOUNDS) continue; // out of bounds = continue
 
-            // Add the position and cancel search if enemy found
-            result.add(pos);
-            if (checkResult == ENEMY) break;
+            if (checkResult == MoveCheckResult.AVAILABLE_SPACE) { // available slot, keep going
+                result.add(pos);
+                continue;
+            }
+
+            // Add the enemy's position to the list of results and then stop searching 
+            if (checkResult == ENEMY) {
+                result.add(pos);
+                break;
+            }
+
+            break; // immune or an ally
         }
+        // check the down position
 
-        // left & right
-        for (int i = -distance; i <= distance; i++) {
+        // region check the down position
+        for (int i = 0; i <= distance; i++) {
+            BoardPosition pos = new BoardPosition(this.position.getRow(), this.position.getColumn() - i);
+            if (pos.equals(this.position)) continue;
+
+            MoveCheckResult checkResult = board.checkPosition(this, pos);
+            if (checkResult == MoveCheckResult.OUT_OF_BOUNDS) continue; // out of bounds = continue
+
+            if (checkResult == MoveCheckResult.AVAILABLE_SPACE) { // available slot, keep going
+                result.add(pos);
+                continue;
+            }
+
+            // Add the enemy's position to the list of results and then stop searching 
+            if (checkResult == ENEMY) {
+                result.add(pos);
+                break;
+            }
+
+            break; // immune or an ally
+        }
+        // endregion
+        
+        // region Check the right position 
+        for (int i = 0; i <= distance; i++) {
             BoardPosition pos = new BoardPosition(this.position.getRow() + i, this.position.getColumn());
-            if (pos.getRow() == this.position.getRow() && pos.getColumn() == this.position.getColumn()) continue;
+            if (pos.equals(this.position)) continue;
 
             MoveCheckResult checkResult = board.checkPosition(this, pos);
-            if (!checkResult.isTakeable()) break; // Check whether the position is takeable
-
-            // Add the position and cancel search if enemy found
-            result.add(pos);
-            if (checkResult == ENEMY) break;
+            if (checkResult == MoveCheckResult.OUT_OF_BOUNDS) continue; // out of bounds = continue
+            
+            if (checkResult == MoveCheckResult.AVAILABLE_SPACE) { // available slot, keep going
+                result.add(pos);
+                continue;
+            }
+            
+            // Add the enemy's position to the list of results and then stop searching 
+            if (checkResult == ENEMY) {
+                result.add(pos);
+                break;
+            }
+            
+            break; // immune or an ally
         }
+        // endregion
+
+        // region Check the left position 
+        for (int i = 0; i <= distance; i++) {
+            BoardPosition pos = new BoardPosition(this.position.getRow() - i, this.position.getColumn());
+            if (pos.equals(this.position)) continue;
+
+            MoveCheckResult checkResult = board.checkPosition(this, pos);
+            if (checkResult == MoveCheckResult.OUT_OF_BOUNDS) continue; // out of bounds = continue
+
+            if (checkResult == MoveCheckResult.AVAILABLE_SPACE) { // available slot, keep going
+                result.add(pos);
+                continue;
+            }
+
+            // Add the enemy's position to the list of results and then stop searching 
+            if (checkResult == ENEMY) {
+                result.add(pos);
+                break;
+            }
+
+            break; // immune or an ally
+        }
+        // endregion
+        
 
         return result;
     }
@@ -99,5 +166,7 @@ public class RookPiece extends ChessPiece {
 
         return board.isEnemy(this, pos);
     }
+    
+    
 
 }
